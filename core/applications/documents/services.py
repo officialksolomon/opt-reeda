@@ -1,7 +1,8 @@
+import io
 import os
 import re
 from typing import Any
-
+from typing import BinaryIO
 import docx
 from django.conf import settings
 from litellm import completion
@@ -20,23 +21,21 @@ class FileExtractionService:
         if not document.file:
             return ""
 
-        file_path = getattr(document.file, "path", "")
-        if not os.path.exists(file_path):  # noqa: PTH110
-            return ""
+        ext = os.path.splitext(document.file.name)[1].lower()
 
-        ext = os.path.splitext(file_path)[1].lower()  # noqa: PTH122
-        if ext == ".pdf":
-            return cls._extract_from_pdf(file_path)
-        if ext in [".doc", ".docx"]:
-            return cls._extract_from_docx(file_path)
-        return cls._extract_from_txt(file_path)
+        with document.file.open("rb") as file:
+            if ext == ".pdf":
+                return cls._extract_from_pdf(file)
+            if ext in [".doc", ".docx"]:
+                return cls._extract_from_docx(file)
+            return cls._extract_from_txt(file)
 
     @classmethod
-    def _extract_from_pdf(cls, file_path: str) -> str:
+    def _extract_from_pdf(cls, file_obj: BinaryIO) -> str:
         """Extract text from a PDF file using PyPDF2."""
         text = []
         try:
-            reader = PdfReader(file_path)
+            reader = PdfReader(file_obj)
             for page in reader.pages:
                 extracted = page.extract_text()
                 if extracted:
@@ -46,11 +45,11 @@ class FileExtractionService:
         return "\n\n".join(text)
 
     @classmethod
-    def _extract_from_docx(cls, file_path: str) -> str:
+    def _extract_from_docx(cls, file_obj: BinaryIO) -> str:
         """Extract text from a DOCX file using python-docx."""
         text = []
         try:
-            doc = docx.Document(file_path)
+            doc = docx.Document(file_obj)
             for para in doc.paragraphs:
                 if para.text:
                     text.append(para.text)  # noqa: PERF401
@@ -59,11 +58,10 @@ class FileExtractionService:
         return "\n\n".join(text)
 
     @classmethod
-    def _extract_from_txt(cls, file_path: str) -> str:
+    def _extract_from_txt(cls, file_obj: BinaryIO) -> str:
         """Extract text from a standard TXT file."""
         try:
-            with open(file_path, encoding="utf-8") as f:  # noqa: PTH123
-                return f.read()
+            return file_obj.read().decode("utf-8")
         except Exception:  # noqa: BLE001, S110
             pass
         return ""
