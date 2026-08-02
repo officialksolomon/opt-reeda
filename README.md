@@ -8,6 +8,7 @@ Opt-Reeda is an advanced document processing API designed to optimize texts for 
 - **Domain-Specific Optimization**: Uses LLMs to reformat text depending on its domain:
   - **Educational**: Expands abbreviations and converts mathematical formulas into spoken word.
   - **Programming**: Handles code blocks effectively, summarizing or skipping them for a smooth listening experience.
+  - *(Note: We are definitely going to support many more domains in the future. This is just the start!)*
 - **Chunking**: Breaks text into manageable chunks based on estimated reading time.
 - **Authentication**: Built with robust JWT-based authentication using `dj-rest-auth`.
 
