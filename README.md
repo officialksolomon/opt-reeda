@@ -4,7 +4,12 @@ Opt-Reeda is an advanced document processing API designed to optimize texts for 
 
 ## Features
 - **File Extraction**: Extracts raw text from PDF, DOCX, and TXT files.
-- **Base Cleaning**: Removes noise like formatting artifacts, page numbers, citations, and standardizes URLs.
+- **Base Cleaning**: Removes noise to prepare text for a smoother TTS experience:
+  - **Formatting**: Strips out visual separators like `---` or `===`.
+  - **Page Numbers**: Removes isolated page numbers like "Page 4" or "- 4 -".
+  - **URLs**: Converts raw links into a natural phrase like "Link to referenced resource".
+  - **Citations**: Simplifies academic citations (e.g., changes "(Smith et al., 2023)" to "Smith and colleagues").
+  - **Ellipses**: Trims excess periods (`.......`) to prevent TTS stuttering.
 - **Domain-Specific Optimization**: Uses LLMs to reformat text depending on its domain:
   - **Educational**: Expands abbreviations and converts mathematical formulas into spoken word.
   - **Programming**: Handles code blocks effectively, summarizing or skipping them for a smooth listening experience.
