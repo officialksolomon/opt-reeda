@@ -1,0 +1,142 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true,
+  "terminal.integrated.defaultProfile.windows": "Command Prompt",
+  "editor.lineHeight": 28,
+  "[python]": {
+    "editor.defaultFormatter": "astral-sh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  "python.formatting.provider": "none",
+  "python.linting.enabled": false,
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": false,
+  "python.linting.mypyEnabled": false,
+  "ruff.fixAll": true,
+  "ruff.lint.run": "onType",
+  "notebook.formatOnSave.enabled": true,
+  "notebook.codeActionsOnSave": {
+    "source.fixAll.ruff": "explicit",
+    "source.organizeImports.ruff": "explicit"
+  },
+  "editor.wordWrap": "on",
+  "emmet.includeLanguages": {
+    "django-html": "html"
+  },
+  "[django-html]": {
+    "editor.defaultFormatter": "batisteo.vscode-django"
+  },
+  "files.associations": {
+    "**/*.html": "html",
+    "**/templates/*/*.html": "django-html",
+    "**/templates/*": "django-txt",
+    "**/requirements{/**,*}.{txt,in}": "pip-requirements"
+  },
+  "security.workspace.trust.untrustedFiles": "open",
+  "git.confirmSync": false,
+  "workbench.startupEditor": "none",
+  "workbench.browser.enableChatTools": true,
+  "git.enableSmartCommit": true,
+  "git.autofetch": true,
+  "python.languageServer": "Default",
+  "python.analysis.typeCheckingMode": "off",
+  "python.analysis.diagnosticMode": "openFilesOnly",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.ignore": [
+    "*"
+  ],
+  "pyright.disableLanguageServices": true,
+  "pyright.disableDiagnostics": true,
+  "pyright.disableOrganizeImports": true,
+  "editor.linkedEditing": true,
+  "liveServer.settings.donotShowInfoMsg": true,
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportGeneralTypeIssues": "none",
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none",
+    "reportUnboundVariable": "none",
+    "reportImplicitStringConcatenation": "none"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "dart.lineLength": 79,
+  "editor.wordWrapColumn": 79,
+  "javascript.preferences.quoteStyle": "single",
+  "prettier.singleQuote": true,
+  "html.completion.attributeDefaultValue": "singlequotes",
+  "prettier.jsxSingleQuote": true,
+  "typescript.preferences.quoteStyle": "single",
+  "editor.formatOnSave": true,
+  "editor.quickSuggestionsDelay": 5,
+  "editor.screenReaderAnnounceInlineSuggestion": false,
+  "editor.minimap.maxColumn": 100,
+  "editor.minimap.autohide": "mouseover",
+  "editor.minimap.enabled": false,
+  "terminal.integrated.lineHeight": 1.6,
+  "code-runner.runInTerminal": true,
+  "diffEditor.hideUnchangedRegions.enabled": true,
+  "terminal.integrated.env.windows": {},
+  "redhat.telemetry.enabled": false,
+  "files.autoSaveDelay": 700,
+  "terminal.integrated.enableMultiLinePasteWarning": false,
+  "git.ignoreRebaseWarning": true,
+  "workbench.iconTheme": "material-icon-theme",
+  "editor.gotoLocation.multipleDeclarations": "goto",
+  "editor.gotoLocation.multipleDefinitions": "goto",
+  "python.analysis.showOnlyDirectDependenciesInAutoImport": true,
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "github.copilot.chat.agentDebugLog.enabled": true,
+  "github.copilot.enable": {
+    "*": true,
+    "plaintext": false,
+    "markdown": false,
+    "scminput": false
+  },
+  "workbench.secondarySideBar.defaultVisibility": "visible",
+  "workbench.sideBar.location": "right",
+  "editor.fontSize": 13,
+  "notebook.lineNumbers": "on",
+  "chat.sendElementsToChat.attachCSS": true,
+  "autoHide.autoHideSideBar": false,
+  "liveServer.settings.port": 3000,
+  "liveServer.settings.host": "localhost",
+  "diffEditor.ignoreTrimWhitespace": false,
+  "explorer.confirmPasteNative": false,
+  "chat.useNestedAgentsMdFiles": true,
+  "gitlens.ai.model": "vscode",
+  "gitlens.ai.vscode.model": "copilot:gpt-4.1",
+  "githubPullRequests.pullBranch": "never",
+  "chat.checkpoints.showFileChanges": true,
+  "files.autoSave": "afterDelay",
+  "chat.viewSessions.orientation": "stacked",
+  "github.copilot.nextEditSuggestions.eagerness": "high",
+  "workbench.browser.sendElementsToChat.attachImages": true,
+  "chat.sessionSync.enabled": true,
+  "pyrefly.enabled": false,
+  "pyrefly.disableLanguageServices": true,
+  "pyrefly.disableDiagnostics": true,
+  "pyrefly.disableOrganizeImports": true,
+  "pyrefly.typeCheckingMode": "off",
+  "pyrefly.reportMissingImports": "none",
+  "pyrefly.reportMissingModuleSource": "none",
+  "pyrefly.analyzeUnsavedFiles": false
+}

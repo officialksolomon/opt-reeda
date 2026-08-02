@@ -1,0 +1,213 @@
+[project]
+name = "my_awesome_project"
+version = "0.1.0"
+description = "Behold My Awesome Project!"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+  { name = "Daniel Roy Greenfeld", email = "daniel-roy-greenfeld@example.com" },
+]
+requires-python = "==3.14.*"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+  "django==6.0.7",
+  "litellm",
+  "django-environ==0.14.0",
+  "python-slugify==8.0.4",
+  "Pillow==12.3.0",
+  "argon2-cffi==25.1.0",
+  "redis==8.0.1",
+  "hiredis==3.4.0",
+  "django-model-utils==5.0.0",
+  "django-allauth[mfa]==65.18.0",
+  "django-crispy-forms==2.6",
+  "crispy-bootstrap5==2026.3",
+  "django-redis==7.0.0",
+  "gunicorn==26.0.0",
+  "psycopg[c]==3.3.4",
+  "Collectfasta==3.3.3",
+  "django-storages[s3]==1.14.6",
+  "django-anymail[mailgun]==15.0",
+  "django-auto-prefetch>=1.14.0",
+  "djangorestframework>=3.17.1",
+  "drf-spectacular>=0.30.0",
+  "python-docx>=1.2.0",
+  "pypdf2>=3.0.1",
+  "djangorestframework-simplejwt>=5.5.1",
+  "dj-rest-auth>=7.2.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest==9.1.1",
+  "Werkzeug[watchdog]==3.1.8",
+  "ipdb==0.13.13",
+  "psycopg[binary]==3.3.4",
+  "mypy==2.3.0",
+  "django-stubs[compatible-mypy]==6.0.7",
+  "pytest-sugar==1.1.1",
+  "sphinx==9.1.0",
+  "sphinx-autobuild==2025.8.25",
+  "ruff==0.16.0",
+  "coverage==7.15.2",
+  "django-upgrade==1.31.1",
+  "djlint==1.42.3",
+  "pre-commit==4.6.1",
+  "factory-boy==3.3.3",
+  "django-debug-toolbar==7.0.0",
+  "django-extensions==4.1",
+  "django-coverage-plugin==3.2.2",
+  "pytest-django==4.12.0",
+  "djangorestframework-stubs[compatible-mypy]>=1.4.0",
+]
+
+# ==== djLint ====
+[tool.djlint]
+blank_line_after_tag = "load,extends"
+custom_blocks = "slot"
+close_void_tags = true
+format_css = true
+format_js = true
+# TODO: remove T002 when fixed https://github.com/djlint/djLint/issues/687
+ignore = "H006,H030,H031,T002"
+include = "H017,H035"
+indent = 2
+max_line_length = 119
+profile = "django"
+css.indent_size = 2
+js.indent_size = 2
+
+# ==== ruff ====
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+extend-exclude = [
+  "*/migrations/*.py",
+  "staticfiles/*",
+]
+
+lint.select = [
+  "A",
+  "ASYNC",
+  "B",
+  "BLE",
+  "C4",
+  "C90",
+  "COM",
+  "DJ",
+  "DTZ",
+  "E",
+  "EM",
+  "ERA",
+  "EXE",
+  "F",
+  "FA",
+  "FBT",
+  "FLY",
+  "G",
+  "I",
+  "ICN",
+  "INP",
+  "INT",
+  "ISC",
+  "N",
+  "PD",
+  "PERF",
+  "PGH",
+  "PIE",
+  "PL",
+  "PT",
+  "PTH",
+  "PYI",
+  "Q",
+  "RET",
+  "RSE",
+  "RUF",
+  "S",
+  "SIM",
+  "SLF",
+  "SLOT",
+  "T10",
+  "T20",
+  "TC",
+  "TID",
+  "TRY",
+  "UP",
+  "W",
+  "YTT",
+]
+lint.ignore = [
+  "COM812", # Trailing comma missing (conflicts with ruff format)
+  "E501",   # Line too long
+  "ISC001", # Implicit string concatenation (conflicts with ruff format)
+  "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
+  "S101",   # Use of assert detected https://docs.astral.sh/ruff/rules/assert/
+  "SIM102", # sometimes it's better to nest
+  # of types for comparison.
+  # Deactivated because it can make the code slow:
+  # https://github.com/astral-sh/ruff/issues/7871
+]
+lint.isort.force-single-line = true
+
+# ==== pyproject-fmt ====
+[tool.pyproject-fmt]
+keep_full_version = true
+
+# ==== pytest ====
+[tool.pytest]
+addopts = [
+  "--ds=config.settings.test",
+  "--reuse-db",
+  "--import-mode=importlib",
+]
+minversion = "9.0"
+python_files = [
+  "tests.py",
+  "test_*.py",
+]
+
+# ==== Coverage ====
+[tool.coverage.run]
+include = [ "my_awesome_project/**" ]
+omit = [ "*/migrations/*", "*/tests/*" ]
+plugins = [ "django_coverage_plugin" ]
+
+# ==== mypy ====
+[tool.mypy]
+python_version = "3.14"
+check_untyped_defs = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+plugins = [
+  "mypy_django_plugin.main",
+]
+
+[[tool.mypy.overrides]]
+# Django migrations should not produce any errors:
+module = "*.migrations.*"
+ignore_errors = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+# ==== pyright ====
+[tool.pyright]
+typeCheckingMode = "off"
+reportGeneralTypeIssues = false
+reportMissingImports = false
+reportMissingModuleSource = false
+ignore = ["**/*", "**/__pyrefly_virtual__/**", "C:/__pyrefly_virtual__/**"]
+
+# ==== pyrefly ====
+[tool.pyrefly]
+enabled = false
+typeCheckingMode = "off"
+reportGeneralTypeIssues = false
+reportMissingImports = false
+reportMissingModuleSource = false
+ignore = ["**/*", "**/__pyrefly_virtual__/**", "C:/__pyrefly_virtual__/**"]
+
