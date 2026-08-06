@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ document.title }} - Playback{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Header -->
+    <div class="mb-8 border-b border-gray-200 pb-4">
+        <a href="{% url 'documents:document-list' %}" class="inline-flex items-center text-sm font-medium text-brand hover:text-brandHover mb-3 transition">
+            <svg class="mr-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Library
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900">{{ document.title }}</h1>
+        <p class="text-sm text-gray-500 mt-1">Domain: {{ document.get_domain_type_display }}</p>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-8 relative">
+        
+        <!-- Left column: Sticky Player Controls -->
+        <div class="lg:w-1/3 order-2 lg:order-2">
+            <div class="fixed bottom-0 left-0 right-0 lg:relative lg:bottom-auto bg-white rounded-t-xl lg:rounded-lg shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] lg:shadow-sm border-t lg:border border-gray-200 p-4 lg:p-6 z-50 lg:z-auto lg:sticky lg:top-24 max-h-[50vh] overflow-y-auto lg:max-h-none lg:overflow-visible transition-transform duration-300">
+                
+                <h3 class="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-2">Player Settings</h3>
+                
+                <div class="mb-5">
+                    <label for="voiceSelect" class="block text-sm font-bold text-gray-700 mb-2">Voice</label>
+                    <select id="voiceSelect" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand focus:ring-brand sm:text-sm p-2 border bg-white"></select>
+                </div>
+                
+                <div class="space-y-4 mb-8">
+                    <div>
+                        <label for="rateInput" class="flex justify-between text-sm font-bold text-gray-700 mb-2">
+                            <span>Speed</span>
+                            <span id="rateLabel" class="text-gray-500 font-normal">1x</span>
+                        </label>
+                        <input type="range" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand" id="rateInput" min="0.5" max="2" value="1" step="0.1">
+                    </div>
+                    <div>
+                        <label for="pitchInput" class="flex justify-between text-sm font-bold text-gray-700 mb-2">
+                            <span>Pitch</span>
+                            <span id="pitchLabel" class="text-gray-500 font-normal">1</span>
+                        </label>
+                        <input type="range" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand" id="pitchInput" min="0" max="2" value="1" step="0.1">
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex justify-center items-center space-x-4 pt-6 border-t border-gray-100">
+                    
+                    <button type="button" id="btnStop" aria-label="Stop playback" class="text-gray-400 hover:text-gray-600 disabled:opacity-50 transition" disabled title="Stop">
+                        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z"/></svg>
+                    </button>
+                    
+                    <!-- Play / Pause -->
+                    <button type="button" id="btnPlay" aria-label="Play" class="w-16 h-16 rounded-full bg-brand text-white flex items-center justify-center hover:bg-brandHover shadow-md disabled:opacity-50 transition transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-200" disabled title="Play">
+                        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
+                    </button>
+                    <button type="button" id="btnPause" aria-label="Pause" class="w-16 h-16 rounded-full bg-brand text-white flex items-center justify-center hover:bg-brandHover shadow-md disabled:opacity-50 transition transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-200" style="display:none;" title="Pause">
+                        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/></svg>
+                    </button>
+                    <button type="button" id="btnResume" aria-label="Resume" class="w-16 h-16 rounded-full bg-brand text-white flex items-center justify-center hover:bg-brandHover shadow-md disabled:opacity-50 transition transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-200" style="display:none;" title="Resume">
+                        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
+                    </button>
+
+                    <button type="button" id="btnNext" aria-label="Next chunk" class="text-gray-400 hover:text-gray-600 disabled:opacity-50 transition" disabled title="Next Chunk">
+                        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M12.5 4a.5.5 0 0 0-1 0v3.248L5.233 3.612C4.693 3.3 4 3.678 4 4.308v7.384c0 .63.692 1.01 1.233.696L11.5 8.752V12a.5.5 0 0 0 1 0V4z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right column: Content Area -->
+        <div class="lg:w-2/3 order-1 lg:order-1 pb-64 lg:pb-0">
+            <div id="chunks-wrapper" aria-live="polite" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-10 leading-relaxed text-lg text-gray-800">
+                {% include "documents/partials/chunk_list.html" %}
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<style>
+    .chunk-item {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border-radius: 0.5rem;
+        transition: background-color 0.2s ease, border-left 0.2s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .chunk-item.active-speaking {
+        background-color: #fef2f2; /* red-50 */
+        border-left: 4px solid #e5322d; /* brand */
+        color: #991b1b; /* red-800 */
+    }
+</style>
+{% endblock %}
+
+{% block inline_javascript %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const synth = window.speechSynthesis;
+    let voices = [];
+    
+    const voiceSelect = document.getElementById('voiceSelect');
+    const rateInput = document.getElementById('rateInput');
+    const pitchInput = document.getElementById('pitchInput');
+    const rateLabel = document.getElementById('rateLabel');
+    const pitchLabel = document.getElementById('pitchLabel');
+    
+    const btnPlay = document.getElementById('btnPlay');
+    const btnPause = document.getElementById('btnPause');
+    const btnResume = document.getElementById('btnResume');
+    const btnStop = document.getElementById('btnStop');
+    const btnNext = document.getElementById('btnNext');
+
+    let chunksToPlay = [];
+    let currentChunkIndex = 0;
+    
+    // Update labels dynamically
+    rateInput.addEventListener('input', (e) => rateLabel.textContent = e.target.value + 'x');
+    pitchInput.addEventListener('input', (e) => pitchLabel.textContent = e.target.value);
+    
+    function populateVoiceList() {
+        voices = synth.getVoices();
+        voiceSelect.innerHTML = '';
+        
+        voices.forEach((voice, i) => {
+            const option = document.createElement('option');
+            option.textContent = `${voice.name} (${voice.lang})`;
+            if(voice.default) {
+                option.textContent += ' -- DEFAULT';
+            }
+            option.setAttribute('data-lang', voice.lang);
+            option.setAttribute('data-name', voice.name);
+            voiceSelect.appendChild(option);
+        });
+        
+        if (voices.length > 0) {
+            enableControls();
+        }
+    }
+
+    populateVoiceList();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+
+    function enableControls() {
+        if (document.querySelectorAll('.chunk-item').length > 0) {
+            btnPlay.disabled = false;
+        }
+    }
+    
+    enableControls();
+    
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        if (event.detail.target.id === "chunks-wrapper" || event.detail.target.classList.contains("alert")) {
+            enableControls();
+        }
+    });
+
+    function getSelectedVoice() {
+        if(!voiceSelect.selectedOptions[0]) return null;
+        const selectedOption = voiceSelect.selectedOptions[0].getAttribute('data-name');
+        return voices.find(v => v.name === selectedOption) || null;
+    }
+
+    function speakCurrentChunk() {
+        if (synth.speaking) {
+            synth.cancel();
+        }
+
+        if (currentChunkIndex >= chunksToPlay.length) {
+            resetUI();
+            return;
+        }
+
+        const currentChunkEl = chunksToPlay[currentChunkIndex];
+        const text = currentChunkEl.getAttribute('data-text');
+
+        // Smoothly highlight and scroll to active chunk
+        document.querySelectorAll('.chunk-item').forEach(el => el.classList.remove('active-speaking'));
+        currentChunkEl.classList.add('active-speaking');
+        
+        // Scroll with offset so it's not hidden behind sticky player if on mobile
+        const y = currentChunkEl.getBoundingClientRect().top + window.scrollY - 150;
+        window.scrollTo({top: y, behavior: 'smooth'});
+
+        const utterThis = new SpeechSynthesisUtterance(text);
+        utterThis.voice = getSelectedVoice();
+        utterThis.pitch = pitchInput.value;
+        utterThis.rate = rateInput.value;
+        
+        utterThis.onend = function (event) {
+            currentChunkIndex++;
+            speakCurrentChunk();
+        };
+
+        utterThis.onerror = function (event) {
+            console.error('SpeechSynthesisUtterance.onerror', event);
+            currentChunkIndex++;
+            speakCurrentChunk();
+        };
+
+        synth.speak(utterThis);
+    }
+
+    function startPlayback() {
+        chunksToPlay = Array.from(document.querySelectorAll('.chunk-item'));
+        if (chunksToPlay.length === 0) return;
+        
+        currentChunkIndex = 0;
+        
+        btnPlay.style.display = 'none';
+        btnPause.style.display = 'inline-flex';
+        btnPause.disabled = false;
+        btnStop.disabled = false;
+        btnNext.disabled = false;
+        
+        speakCurrentChunk();
+    }
+
+    function pausePlayback() {
+        if (synth.speaking && !synth.paused) {
+            synth.pause();
+            btnPause.style.display = 'none';
+            btnResume.style.display = 'inline-flex';
+        }
+    }
+
+    function resumePlayback() {
+        if (synth.paused) {
+            synth.resume();
+            btnResume.style.display = 'none';
+            btnPause.style.display = 'inline-flex';
+        }
+    }
+
+    function stopPlayback() {
+        synth.cancel();
+        resetUI();
+    }
+    
+    function resetUI() {
+        btnPlay.style.display = 'inline-flex';
+        btnPlay.disabled = false;
+        btnPause.style.display = 'none';
+        btnPause.disabled = true;
+        btnResume.style.display = 'none';
+        btnStop.disabled = true;
+        btnNext.disabled = true;
+        
+        document.querySelectorAll('.chunk-item').forEach(el => el.classList.remove('active-speaking'));
+    }
+
+    btnPlay.addEventListener('click', startPlayback);
+    btnPause.addEventListener('click', pausePlayback);
+    btnResume.addEventListener('click', resumePlayback);
+    btnStop.addEventListener('click', stopPlayback);
+    btnNext.addEventListener('click', function() {
+        if(synth.speaking) {
+            synth.cancel(); // triggers onerror/onend and moves to next chunk
+        }
+    });
+    
+    window.addEventListener("beforeunload", function() {
+        synth.cancel();
+    });
+});
+</script>
+{% endblock %}

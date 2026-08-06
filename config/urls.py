@@ -7,6 +7,7 @@ from django.views import defaults as default_views
 from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView
 from drf_spectacular.views import SpectacularSwaggerView
+from core.applications.users.views import VerifyEmailConfirmView
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
@@ -19,9 +20,11 @@ urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     # User management
     path("users/", include("core.applications.users.urls", namespace="users")),
+    path("documents/", include("core.applications.documents.urls", namespace="documents")),
     path("accounts/", include("allauth.urls")),
     # API Base Router & OpenAPI Schema Documentation
     path("api/auth/", include("dj_rest_auth.urls")),
+    path("api/auth/registration/account-confirm-email/<str:key>/", VerifyEmailConfirmView.as_view(), name="account_confirm_email"),
     path("api/auth/registration/", include("dj_rest_auth.registration.urls")),
     path("api/", include("config.api_router")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

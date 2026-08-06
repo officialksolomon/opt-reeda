@@ -8,11 +8,20 @@ from .forms import UserAdminChangeForm
 from .forms import UserAdminCreationForm
 from .models import User
 
+from django.contrib.admin.forms import AdminAuthenticationForm
+
+class EmailAdminAuthenticationForm(AdminAuthenticationForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].label = _("Email")
+
 if settings.DJANGO_ADMIN_FORCE_ALLAUTH:
     # Force the `admin` sign in process to go through the `django-allauth` workflow:
     # https://docs.allauth.org/en/latest/common/admin.html#admin
     admin.autodiscover()
     admin.site.login = secure_admin_login(admin.site.login)  # type: ignore[method-assign]
+else:
+    admin.site.login_form = EmailAdminAuthenticationForm
 
 
 @admin.register(User)

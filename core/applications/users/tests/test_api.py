@@ -1,6 +1,6 @@
 from typing import Any
 
-from allauth.account.models import EmailAddress
+from allauth.account.models import EmailAddress, EmailConfirmationHMAC
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -72,3 +72,25 @@ class AuthAPITests(APITestCase):
         assert response.status_code == status.HTTP_201_CREATED
         assert User.objects.filter(username="newuser").exists()
         assert "Verification e-mail sent." in response.data.get("detail", "")
+
+    def test_api_account_activation(self):
+        data = {
+            "username": "activateuser",
+            "email": "activateuser@example.com",
+            "password1": "newpassword123",
+            "password2": "newpassword123",
+        }
+        self.client.post(self.registration_url, data)
+        
+        email_address = EmailAddress.objects.get(email="activateuser@example.com")
+        assert not email_address.verified
+
+        confirmation = EmailConfirmationHMAC(email_address)
+        
+        verify_url = "/api/auth/registration/verify-email/"
+        verify_data = {"key": confirmation.key}
+        response = self.client.post(verify_url, verify_data)
+        
+        assert response.status_code == status.HTTP_200_OK
+        email_address.refresh_from_db()
+        assert email_address.verified

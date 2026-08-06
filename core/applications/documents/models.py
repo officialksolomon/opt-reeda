@@ -15,6 +15,7 @@ from django.db.models import PositiveIntegerField
 from django.db.models import TextField
 from django.utils.translation import gettext_lazy as _
 
+from django.conf import settings
 from core.helpers.enums import CodeMode
 from core.helpers.enums import DomainType
 from core.helpers.enums import Status
@@ -28,6 +29,14 @@ class Document(TimeBasedModel):  # type: ignore[django-manager-missing]
     DomainType = DomainType
     Status = Status
     CodeMode = CodeMode
+    
+    user = ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="documents"
+    )
 
     title = CharField(max_length=255)
     file = FileField(upload_to="documents/", blank=True, null=True)

@@ -254,16 +254,16 @@ class PipelineService:
         document.save(update_fields=["status"])
 
         try:
-            # 0. File Extraction if raw_text is empty
+            # File Extraction if raw_text is empty
             if not document.raw_text and document.file:
                 document.raw_text = FileExtractionService.extract_text(document)
                 document.save(update_fields=["raw_text"])
 
-            # 1. Base Cleaning
+            # Base Cleaning
             raw_text_str = str(document.raw_text or "")
             base_cleaned = BaseCleanerService.clean_formatting(raw_text_str)
 
-            # 2. Domain Specific Optimization
+            # Domain Specific Optimization
             domain = str(document.domain_type)
             if domain == Document.DomainType.AUTO_DETECT:
                 # Simple heuristic auto-detection
@@ -276,10 +276,10 @@ class PipelineService:
                 else:
                     domain = Document.DomainType.EDUCATIONAL
 
-            # 3. Create Chunks FIRST from base_cleaned text
+            # Create Chunks FIRST from base_cleaned text
             chunks = cls._create_chunks(document, base_cleaned)
 
-            # Now optimize each chunk with LLM
+            # Optimize each chunk with LLM
             optimized_full_text = []
             for chunk in chunks:
                 optimized_chunk_text = LLMOptimizerService.optimize_chunk(
@@ -322,6 +322,7 @@ class PipelineService:
 
         for i, para in enumerate(paragraphs):
             word_count = len(para.split())
+            # Ensure each chunk takes at least 5 seconds to read
             est_seconds = max(5, int((word_count / words_per_minute) * 60))
             chunk = document.chunks.create(
                 chunk_index=i + 1,

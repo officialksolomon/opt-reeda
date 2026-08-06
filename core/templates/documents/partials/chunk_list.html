@@ -1,0 +1,24 @@
+{% if document.status == 'COMPLETED' %}
+    <div class="chunks-container mt-4">
+        <h4>Document Chunks</h4>
+        <div id="tts-chunks" class="list-group">
+            {% for chunk in chunks %}
+                <div class="list-group-item chunk-item" id="chunk-{{ chunk.chunk_index }}" data-text="{{ chunk.optimized_text|escape }}">
+                    <h6 class="mb-1">Chunk {{ chunk.chunk_index }}</h6>
+                    <p class="mb-1">{{ chunk.optimized_text }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% elif document.status == 'FAILED' %}
+    <div class="alert alert-danger mt-4">
+        Processing failed: {{ document.error_message }}
+    </div>
+{% else %}
+    <div class="alert alert-info mt-4" hx-get="{% url 'documents:document-process' document.pk %}" hx-trigger="every 2s" hx-swap="outerHTML">
+        <div class="d-flex align-items-center">
+            <strong>Processing Document...</strong>
+            <div class="spinner-border ms-auto" role="status" aria-hidden="true"></div>
+        </div>
+    </div>
+{% endif %}

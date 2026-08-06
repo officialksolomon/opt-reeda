@@ -20,8 +20,8 @@
   "ruff.lint.run": "onType",
   "notebook.formatOnSave.enabled": true,
   "notebook.codeActionsOnSave": {
-    "source.fixAll.ruff": "explicit",
-    "source.organizeImports.ruff": "explicit"
+    "notebook.source.fixAll.ruff": "explicit",
+    "notebook.source.organizeImports.ruff": "explicit"
   },
   "editor.wordWrap": "on",
   "emmet.includeLanguages": {

@@ -50,3 +50,27 @@ class UserRedirectView(LoginRequiredMixin, RedirectView):
 
 
 user_redirect_view = UserRedirectView.as_view()
+
+from allauth.account.models import EmailConfirmationHMAC, EmailConfirmation
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+
+from drf_spectacular.utils import extend_schema
+
+class VerifyEmailConfirmView(APIView):
+    permission_classes = (AllowAny,)
+    
+    @extend_schema(responses=None)
+    def get(self, request, key):
+        try:
+            confirmation = EmailConfirmationHMAC.from_key(key)
+            if not confirmation:
+                confirmation = EmailConfirmation.objects.get(key=key.lower())
+            
+            confirmation.confirm(self.request)
+            return Response({"detail": "Email confirmed successfully."}, status=200)
+        except EmailConfirmation.DoesNotExist:
+            return Response({"detail": "Email confirmation not found."}, status=404)
+        except Exception:
+            return Response({"detail": "Invalid or expired key."}, status=400)

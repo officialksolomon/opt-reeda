@@ -1,3 +1,53 @@
 {% extends "base.html" %}
 
+{% block title %}OptReeda | Listen to Documents{% endblock %}
 
+{% block content %}
+<div class="bg-bodyBg pt-16 pb-24">
+  <div class="max-w-4xl mx-auto text-center px-4">
+    <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6 tracking-tight">Turn any document into audio that's  worth listening to.</h1>
+    <p class="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">OptReeda transforms PDFs, DOCX, and text files into clean, structured, natural-sounding content optimized for modern text-to-speech engines.</p>
+    
+    <div class="flex flex-col sm:flex-row justify-center gap-4">
+      <a href="{% url 'documents:document-upload' %}" class="bg-brand hover:bg-brandHover text-white font-bold py-4 px-10 rounded-lg shadow-lg text-lg transition duration-200 ease-in-out transform hover:-translate-y-1 block w-full sm:w-auto">
+        Start Processing
+      </a>
+      {% if request.user.is_authenticated %}
+      <a href="{% url 'documents:document-list' %}" class="bg-white border-2 border-gray-200 hover:border-gray-300 text-gray-800 font-bold py-4 px-10 rounded-lg text-lg transition duration-200 block w-full sm:w-auto">
+        My Library
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+    
+    <div class="bg-white p-10 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
+      <div class="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-stars text-brand" viewBox="0 0 16 16"><path d="M7.657 6.247c.11-.33.576-.33.686 0l.203.61a2.46 2.46 0 0 0 1.587 1.587l.61.203c.33.11.33.576 0 .686l-.61.203a2.46 2.46 0 0 0-1.587 1.587l-.203.61c-.11.33-.576.33-.686 0l-.203-.61a2.46 2.46 0 0 0-1.587-1.587l-.61-.203c-.33-.11-.33-.576 0-.686l.61-.203a2.46 2.46 0 0 0 1.587-1.587l.203-.61zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.156 1.156 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.156 1.156 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732L10.863.1z"/></svg>
+      </div>
+      <h3 class="text-xl font-bold text-gray-900 mb-3">Clean Formatting</h3>
+      <p class="text-gray-500">We automatically strip out messy text, fix abbreviations, and format code so it sounds perfect.</p>
+    </div>
+    
+    <div class="bg-white p-10 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
+      <div class="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-browser-chrome text-blue-500" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M16 8a8.001 8.001 0 0 1-7.022 7.94l1.902-7.098a2.995 2.995 0 0 0 .05-1.492A2.977 2.977 0 0 0 10.237 6h5.511A8 8 0 0 1 16 8ZM0 8a8 8 0 0 0 7.927 8l1.426-5.321a2.978 2.978 0 0 1-.723.255 2.979 2.979 0 0 1-1.743-.147 2.986 2.986 0 0 1-1.043-.7L.633 4.876A7.975 7.975 0 0 0 0 8Zm5.004-.167L1.108 3.936A8.003 8.003 0 0 1 15.418 5H8.066a2.979 2.979 0 0 0-1.252.243 2.987 2.987 0 0 0-1.81 2.59ZM8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg>
+      </div>
+      <h3 class="text-xl font-bold text-gray-900 mb-3">Native Playback</h3>
+      <p class="text-gray-500">No heavy downloads or slow audio generation. Audio is synthesized locally in your browser.</p>
+    </div>
+    
+    <div class="bg-white p-10 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
+      <div class="bg-green-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-file-text text-green-500" viewBox="0 0 16 16"><path d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zM5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1H5z"/><path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/></svg>
+      </div>
+      <h3 class="text-xl font-bold text-gray-900 mb-3">Visual Syncing</h3>
+      <p class="text-gray-500">Read along with ease. The text chunk currently being spoken is highlighted instantly.</p>
+    </div>
+    
+  </div>
+</div>
+{% endblock %}
