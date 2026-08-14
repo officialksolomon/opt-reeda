@@ -21,6 +21,11 @@ class CodeMode(models.TextChoices):
     READ_CLEAN = "read_clean", _("Read Signature & Clean")
 
 
+class OptimizationMode(models.TextChoices):
+    MANUAL = "manual", _("Manual")
+    AI = "ai", _("AI")
+
+
 class OptimizationPreference(models.TextChoices):
     # Educational Prompts
     SIMPLIFY_TERMS = "simplify_terms", _("Simplify Academic Terms")

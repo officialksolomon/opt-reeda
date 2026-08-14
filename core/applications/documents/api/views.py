@@ -5,6 +5,7 @@ from rest_framework.parsers import FormParser
 from rest_framework.parsers import JSONParser
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
+from rest_framework import permissions
 
 from core.applications.documents.api.schemas import document_chunk_viewset_schema
 from core.applications.documents.api.schemas import document_viewset_schema
@@ -15,6 +16,7 @@ from core.applications.documents.models import Document
 from core.applications.documents.models import DocumentChunk
 from core.applications.documents.services import PipelineService
 from core.helpers.enums import OptimizationPreference
+from core.helpers.enums import OptimizationMode
 
 
 @document_viewset_schema
@@ -22,6 +24,22 @@ class DocumentViewSet(viewsets.ModelViewSet):
     queryset = Document.objects.all().prefetch_related("chunks")
     serializer_class = DocumentSerializer
     parser_classes = (MultiPartParser, FormParser, JSONParser)
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.action == "list":
+            if self.request.user.is_authenticated:
+                return qs.filter(user=self.request.user)
+            return qs.none()
+        return qs
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.is_authenticated:
+            serializer.save(user=user)
+        else:
+            serializer.save(optimization_mode=OptimizationMode.MANUAL)
 
     @action(detail=False, methods=["get"])
     def optimization_preferences(self, request):
@@ -46,6 +64,14 @@ class DocumentViewSet(viewsets.ModelViewSet):
             document.domain_type = serializer.validated_data["domain_type"]
         if "code_mode" in serializer.validated_data:
             document.code_mode = serializer.validated_data["code_mode"]
+        if "optimization_mode" in serializer.validated_data:
+            document.optimization_mode = serializer.validated_data["optimization_mode"]
+
+        # Enforce Manual mode for Free plan users (or users without subscription)
+        user = request.user
+        if not user.is_authenticated or not hasattr(user, 'subscription') or getattr(user.subscription.plan, 'name', 'Free').lower() == 'free':
+            document.optimization_mode = OptimizationMode.MANUAL
+
         document.save()
 
         processed_doc = PipelineService.process_document(document)

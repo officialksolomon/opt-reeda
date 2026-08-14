@@ -38,8 +38,8 @@ def update_site_forward(apps, schema_editor):
     _update_or_create_site_with_sequence(
         Site,
         schema_editor.connection,
-        "example.com",
-        "My Awesome Project",
+        "127.0.0.1:8000",
+        "OptReeda",
     )
 
 

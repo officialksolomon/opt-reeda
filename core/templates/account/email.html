@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load i18n static allauth account %}
+
+{% block title %}Manage Email Addresses{% endblock title %}
+
+{% block content %}
+<div class="min-h-[calc(100vh-64px)] bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-2xl mx-auto space-y-8">
+
+    <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+      <div class="px-6 py-5 border-b border-gray-200 bg-gray-50/50">
+        <h3 class="text-xl leading-6 font-semibold text-gray-900">Email Addresses</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">Manage the email addresses associated with your account.</p>
+      </div>
+      
+      <div class="px-6 py-6">
+        {% if emailaddresses %}
+          <form method="post" action="{% url 'account_email' %}" class="space-y-6">
+            {% csrf_token %}
+            <div class="space-y-3">
+              {% for radio in emailaddress_radios %}
+                {% with emailaddress=radio.emailaddress %}
+                <label class="relative flex cursor-pointer rounded-lg border bg-white p-4 shadow-sm focus:outline-none {% if emailaddress.primary %}border-brand ring-1 ring-brand{% else %}border-gray-300{% endif %} hover:border-brand transition-colors">
+                  <input type="radio" name="email" value="{{ emailaddress.email }}" id="{{ radio.id }}" {% if radio.checked %}checked{% endif %} class="mt-1 h-4 w-4 border-gray-300 text-brand focus:ring-brand">
+                  <div class="ml-4 flex flex-1 flex-col">
+                    <span class="block text-sm font-medium text-gray-900">{{ emailaddress.email }}</span>
+                    <div class="mt-1 flex items-center gap-2">
+                      {% if emailaddress.verified %}
+                        <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Verified</span>
+                      {% else %}
+                        <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Unverified</span>
+                      {% endif %}
+                      {% if emailaddress.primary %}
+                        <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Primary</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </label>
+                {% endwith %}
+              {% endfor %}
+            </div>
+
+            <div class="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                <button type="submit" name="action_primary" class="inline-flex items-center rounded-md bg-brand px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brandHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand transition">
+                    Make Primary
+                </button>
+                <button type="submit" name="action_send" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition">
+                    Re-send Verification
+                </button>
+                <button type="submit" name="action_remove" class="inline-flex items-center rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-red-200 hover:bg-red-100 transition">
+                    Remove
+                </button>
+            </div>
+          </form>
+        {% else %}
+          <div class="rounded-md bg-yellow-50 p-4 mb-6">
+            <div class="flex">
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-yellow-800">Warning:</h3>
+                <div class="mt-2 text-sm text-yellow-700">
+                  <p>You currently do not have any email address set up. You should really add an email address so you can receive notifications, reset your password, etc.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if can_add_email %}
+    <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+      <div class="px-6 py-5 border-b border-gray-200 bg-gray-50/50">
+        <h3 class="text-lg leading-6 font-semibold text-gray-900">Add Email Address</h3>
+      </div>
+      <div class="px-6 py-6">
+        <form method="post" action="{% url 'account_email' %}" class="space-y-6">
+          {% csrf_token %}
+          
+          {% if form.non_field_errors %}
+          <div class="bg-red-50 p-4 rounded-md">
+              <p class="text-sm text-red-800">{{ form.non_field_errors.0 }}</p>
+          </div>
+          {% endif %}
+
+          {% for field in form %}
+          <div>
+              <label for="{{ field.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-1">{{ field.label }}</label>
+              <div class="mt-1">
+                  {{ field }}
+              </div>
+              {% if field.help_text %}
+              <p class="mt-2 text-xs text-gray-500">{{ field.help_text }}</p>
+              {% endif %}
+              {% if field.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ field.errors.0 }}</p>
+              {% endif %}
+          </div>
+          {% endfor %}
+
+          <div class="pt-2">
+            <button type="submit" name="action_add" class="inline-flex justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-brand hover:bg-brandHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand transition-colors duration-200">
+                Add Email
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="flex justify-start">
+        <a href="{{ request.user.get_absolute_url }}" class="text-sm font-medium text-brand hover:text-brandHover flex items-center transition">
+            &larr; Back to Profile
+        </a>
+    </div>
+
+  </div>
+</div>
+
+<script src="{% static 'account/js/account.js' %}"></script>
+<script src="{% static 'account/js/onload.js' %}"></script>
+<script data-allauth-onload="allauth.account.forms.manageEmailForm" type="application/json">
+    {"i18n": {"confirmDelete": "{% trans 'Do you really want to remove the selected email address?' %}"}}
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const inputs = document.querySelectorAll('input[type="email"], input[type="text"]');
+        inputs.forEach(input => {
+            input.className = "block w-full appearance-none rounded-md border border-gray-300 px-4 py-3 placeholder-gray-400 shadow-sm focus:border-brand focus:outline-none focus:ring-brand sm:text-sm transition duration-200";
+        });
+    });
+</script>
+{% endblock content %}

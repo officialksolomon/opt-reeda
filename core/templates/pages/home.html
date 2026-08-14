@@ -2,10 +2,38 @@
 
 {% block title %}OptReeda | Listen to Documents{% endblock %}
 
+{% block css %}
+{{ block.super }}
+<style>
+  @keyframes charReveal {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .char-anim {
+    display: inline-block;
+    opacity: 0;
+    animation: charReveal 0.5s forwards ease-out;
+  }
+</style>
+{% endblock css %}
+
 {% block content %}
-<div class="bg-bodyBg pt-16 pb-24">
-  <div class="max-w-4xl mx-auto text-center px-4">
-    <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6 tracking-tight">Turn any document into audio that's  worth listening to.</h1>
+<div class="bg-bodyBg pt-16 pb-24 relative overflow-hidden">
+  
+  <!-- Subtle High-Tech Grid Background -->
+  <div class="absolute inset-0 z-0 pointer-events-none">
+    <svg class="absolute inset-0 h-full w-full stroke-gray-200/80 [mask-image:radial-gradient(100%_100%_at_top_center,white,transparent)]" aria-hidden="true">
+      <defs>
+        <pattern id="hero-grid" width="80" height="80" patternUnits="userSpaceOnUse">
+          <path d="M0 80V.5H80" fill="none" stroke-width="2.5"></path>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" stroke-width="0" fill="url(#hero-grid)"></rect>
+    </svg>
+  </div>
+
+  <div class="max-w-4xl mx-auto text-center px-4 relative z-10">
+    <h1 id="animated-heading" class="text-5xl md:text-6xl font-bold text-gray-900 mb-6 tracking-tight">Turn any document into audio that's worth listening to.</h1>
     <p class="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">OptReeda transforms PDFs, DOCX, and text files into clean, structured, natural-sounding content optimized for modern text-to-speech engines.</p>
     
     <div class="flex flex-col sm:flex-row justify-center gap-4">
@@ -49,5 +77,43 @@
     </div>
     
   </div>
+  </div>
 </div>
-{% endblock %}
+{% endblock content %}
+
+{% block inline_javascript %}
+{{ block.super }}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const heading = document.getElementById('animated-heading');
+    if (heading) {
+      const text = heading.textContent.trim();
+      const words = text.replace(/\s+/g, ' ').split(' ');
+      heading.textContent = '';
+      
+      let delay = 0;
+      words.forEach((word, wordIndex) => {
+        const wordSpan = document.createElement('span');
+        wordSpan.style.display = 'inline-block';
+        wordSpan.style.whiteSpace = 'nowrap';
+        
+        for (let i = 0; i < word.length; i++) {
+          const charSpan = document.createElement('span');
+          charSpan.textContent = word[i];
+          charSpan.className = 'char-anim';
+          charSpan.style.animationDelay = `${delay}s`;
+          wordSpan.appendChild(charSpan);
+          delay += 0.03;
+        }
+        
+        heading.appendChild(wordSpan);
+        
+        if (wordIndex < words.length - 1) {
+          heading.appendChild(document.createTextNode(' '));
+          delay += 0.03;
+        }
+      });
+    }
+  });
+</script>
+{% endblock inline_javascript %}

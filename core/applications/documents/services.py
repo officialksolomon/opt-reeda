@@ -10,6 +10,7 @@ from PyPDF2 import PdfReader
 
 from core.applications.documents.models import Document
 from core.helpers.enums import PREDEFINED_PROMPTS
+from core.helpers.enums import OptimizationMode
 
 
 class FileExtractionService:
@@ -102,9 +103,29 @@ class BaseCleanerService:
         # Transform citations
         cleaned = cls.CITATION_ET_AL_PATTERN.sub(r"\1 and colleagues", cleaned)
         cleaned = cls.CITATION_SINGLE_PATTERN.sub(r"\1", cleaned)
-        # Normalize whitespace
-        lines = [line.strip() for line in cleaned.splitlines() if line.strip()]
-        result = "\n\n".join(lines)
+        # Normalize whitespace and reconstruct paragraphs broken by PDF extractors
+        raw_lines = [line.strip() for line in cleaned.splitlines() if line.strip()]
+        merged_lines = []
+        for line in raw_lines:
+            if not merged_lines:
+                merged_lines.append(line)
+                continue
+            
+            prev = merged_lines[-1]
+            # Protect code blocks from being merged
+            if prev.startswith("__CODE_BLOCK") or line.startswith("__CODE_BLOCK"):
+                merged_lines.append(line)
+            # If prev line ends with punctuation, it's likely a complete paragraph
+            elif re.search(r'[.?!:;_"\'\]\)]$', prev):
+                merged_lines.append(line)
+            # If current line starts with a list marker, a number, or Capital letter, maybe it's a new paragraph
+            elif re.match(r'^(?:[A-Z]|\d+\.|[A-Z]\.|-|\*)', line):
+                merged_lines.append(line)
+            else:
+                # Otherwise, it's a continuation of the previous line
+                merged_lines[-1] = prev + " " + line
+                
+        result = "\n\n".join(merged_lines)
 
         # Restore code blocks
         for i, block in enumerate(code_blocks):
@@ -166,29 +187,44 @@ class LLMOptimizerService:
         ]
 
         try:
-            response: Any = completion(model=model, messages=messages)
+            timeout = getattr(settings, "LLM_TIMEOUT", 15)
+            response: Any = completion(model=model, messages=messages, timeout=timeout)
             msg = getattr(response.choices[0], "message", None)
             content = getattr(msg, "content", "")
             return str(content).strip() if content else text
         except Exception:  # noqa: BLE001
             # fallback if LLM fails (e.g. during offline unit tests)
-            return cls._offline_fallback(text, domain, code_mode)
+            return ManualOptimizerService.optimize_chunk(text, domain, code_mode)
+
+
+class ManualOptimizerService:
+    """Offline optimization service for manual/free tier with sophisticated text-to-speech formatting."""
 
     @classmethod
-    def _offline_fallback(
+    def optimize_chunk(
         cls,
         text: str,
         domain: str,
         code_mode: str | None = None,
     ) -> str:
         """
-        Offline fallback for optimizing text using basic regex and string replacements
-        when the LLM is unavailable.
+        Offline formatting using sophisticated regex and string replacements
+        for text-to-speech.
         """
         res = text
+
+        # General enhancements
+        res = re.sub(r"\b(?:e\.g\.|eg)\b", "for example", res, flags=re.IGNORECASE)
+        res = re.sub(r"\b(?:i\.e\.|ie)\b", "that is", res, flags=re.IGNORECASE)
+        res = re.sub(r"\b(?:etc\.|etc)\b", "and so on", res, flags=re.IGNORECASE)
+        res = re.sub(r"\b(?:vs\.|vs)\b", "versus", res, flags=re.IGNORECASE)
+        res = re.sub(r"(\d+)%", r"\g<1> percent", res)
+        res = re.sub(r"_{3,}", "blank", res)
+
         if domain == Document.DomainType.EDUCATIONAL:
             res = res.replace("Fig.", "Figure")
             res = res.replace("Ch.", "Chapter")
+            res = res.replace("Eq.", "Equation")
             res = res.replace(
                 "F = ma",
                 "Force equals mass multiplied by acceleration",
@@ -197,6 +233,13 @@ class LLMOptimizerService:
                 "E = mc^2",
                 "Energy equals mass times the speed of light squared",
             )
+            # Basic math symbol expansion for educational texts
+            res = re.sub(r" \+ ", " plus ", res)
+            res = re.sub(r" \- ", " minus ", res)
+            res = re.sub(r" \= ", " equals ", res)
+            res = re.sub(r" \* ", " times ", res)
+            res = re.sub(r" / ", " divided by ", res)
+
         elif domain == Document.DomainType.PROGRAMMING:
 
             def replace_code(match: re.Match) -> str:
@@ -213,6 +256,13 @@ class LLMOptimizerService:
                 return f"[Code snippet containing {count} lines of source code.]"
 
             res = re.sub(r"```[\s\S]*?```", replace_code, res)
+
+            # Simple file path spoken representation (e.g. src/utils.py -> src slash utils dot py)
+            def path_replacer(match: re.Match) -> str:
+                return match.group(0).replace("/", " slash ").replace(".", " dot ")
+
+            res = re.sub(r"\b[\w\-]+(?:/[\w\-]+)+\.[\w]+\b", path_replacer, res)
+
         return res
 
 
@@ -276,30 +326,75 @@ class PipelineService:
                 else:
                     domain = Document.DomainType.EDUCATIONAL
 
+            if domain == Document.DomainType.EDUCATIONAL:
+                lines = base_cleaned.split('\n\n')
+                # Matches: "1. ", "2) ", "3- ", "Q1 ", "Question 1: ", "a) ", "B. "
+                q_pattern = re.compile(r'^\s*(?:(?:Q(?:uestion)?\s*\d+[\.\):\-]?)|(?:\d+[\.\):\-])|(?:[a-zA-Z][\.\)]))\s+', re.IGNORECASE)
+                blank_pattern = re.compile(r'_{3,}|\bblank\b', re.IGNORECASE)
+                
+                expecting_answer = False
+                question_counter = 1
+                for i in range(len(lines) - 1):
+                    line_str = lines[i].strip()
+                    has_blank = blank_pattern.search(line_str)
+                    is_q_start = q_pattern.match(line_str)
+                    ends_with_qmark = line_str.endswith('?')
+                    ends_with_punctuation = line_str.endswith('.') or line_str.endswith(':') or ends_with_qmark
+                    
+                    if has_blank or ends_with_qmark or is_q_start:
+                        if not expecting_answer:
+                            # It's a new question! Add a number if it doesn't already have one
+                            if not is_q_start:
+                                lines[i] = f"{question_counter}. " + lines[i]
+                            question_counter += 1
+                        expecting_answer = True
+                        
+                    if expecting_answer:
+                        # If the line ends with a sentence terminator, the question is complete!
+                        # The NEXT line must be the answer.
+                        if ends_with_punctuation:
+                            # Verify the next line is not just another question
+                            next_line = lines[i+1].strip()
+                            if not q_pattern.match(next_line) and not blank_pattern.search(next_line) and not next_line.endswith('?'):
+                                if not next_line.lower().startswith("answer:"):
+                                    lines[i+1] = "Answer: " + lines[i+1]
+                            expecting_answer = False
+                base_cleaned = '\n\n'.join(lines)
+
             # Create Chunks FIRST from base_cleaned text
             chunks = cls._create_chunks(document, base_cleaned)
 
-            # Optimize each chunk with LLM
+            # Optimize each chunk based on optimization mode
             optimized_full_text = []
+            opt_mode = str(document.optimization_mode)
+
             for chunk in chunks:
-                optimized_chunk_text = LLMOptimizerService.optimize_chunk(
-                    str(chunk.raw_text),
-                    domain,
-                    code_mode=str(document.code_mode),
-                    additional_instructions=getattr(
-                        document,
-                        "additional_instructions",
-                        None,
-                    ),
-                )
+                if opt_mode == OptimizationMode.MANUAL:
+                    optimized_chunk_text = ManualOptimizerService.optimize_chunk(
+                        str(chunk.raw_text),
+                        domain,
+                        code_mode=str(document.code_mode),
+                    )
+                else:
+                    optimized_chunk_text = LLMOptimizerService.optimize_chunk(
+                        str(chunk.raw_text),
+                        domain,
+                        code_mode=str(document.code_mode),
+                        additional_instructions=getattr(
+                            document,
+                            "additional_instructions",
+                            None,
+                        ),
+                    )
                 chunk.optimized_text = optimized_chunk_text
                 chunk.save(update_fields=["optimized_text"])
                 optimized_full_text.append(optimized_chunk_text)
 
             document.optimized_speech_text = "\n\n".join(optimized_full_text)
             document.status = Document.Status.COMPLETED
+            mode_desc = "Manual" if opt_mode == OptimizationMode.MANUAL else "LLM"
             document.summary = (
-                f"Successfully optimized document for {domain} domain using LLM."
+                f"Successfully optimized document for {domain} domain using {mode_desc} mode."
             )
             document.save(update_fields=["optimized_speech_text", "status", "summary"])
 

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load i18n account allauth static %}
+
+{% block title %}Confirm Email Address{% endblock title %}
+
+{% block content %}
+<div class="flex min-h-[calc(100vh-64px)] bg-gray-50 flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Confirm Email Address
+        </h2>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow-sm sm:rounded-xl border border-gray-100 sm:px-10">
+            {% if confirmation %}
+                {% user_display confirmation.email_address.user as user_display %}
+                {% if can_confirm %}
+                    <p class="text-sm text-gray-600 text-center mb-6 leading-relaxed">
+                        {% blocktrans with confirmation.email_address.email as email %}
+                        Please confirm that <span class="font-semibold text-gray-900">{{ email }}</span> is an email address for user <span class="font-semibold text-gray-900">{{ user_display }}</span>.
+                        {% endblocktrans %}
+                    </p>
+                    
+                    <form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
+                        {% csrf_token %}
+                        {{ redirect_field }}
+                        <button type="submit" class="flex w-full justify-center rounded-md border border-transparent bg-brand py-3 px-4 text-sm font-bold text-white shadow-sm hover:bg-brandHover focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 transition duration-150 transform hover:-translate-y-0.5">
+                            Confirm
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="rounded-md bg-red-50 p-4">
+                        <div class="flex">
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-red-800">Confirmation Failed</h3>
+                                <div class="mt-2 text-sm text-red-700">
+                                    <p>{% blocktrans %}Unable to confirm {{ email }} because it is already confirmed by a different account.{% endblocktrans %}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                {% url 'account_email' as email_url %}
+                <div class="rounded-md bg-yellow-50 p-4 mb-6">
+                    <div class="flex">
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-yellow-800">Invalid Link</h3>
+                            <div class="mt-2 text-sm text-yellow-700">
+                                <p>{% blocktrans %}This email confirmation link expired or is invalid. Please <a href="{{ email_url }}" class="font-bold underline hover:text-yellow-800">issue a new email confirmation request</a>.{% endblocktrans %}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}

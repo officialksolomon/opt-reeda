@@ -21,6 +21,7 @@ Below you will find the table of contents detailing the core features, applicati
    app/applications
    app/documents_prd
    app/users_prd
+   app/pricing_prd
    howto
    users
 

@@ -18,6 +18,7 @@ from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from core.helpers.enums import CodeMode
 from core.helpers.enums import DomainType
+from core.helpers.enums import OptimizationMode
 from core.helpers.enums import Status
 from core.helpers.models import TimeBasedModel
 
@@ -29,6 +30,7 @@ class Document(TimeBasedModel):  # type: ignore[django-manager-missing]
     DomainType = DomainType
     Status = Status
     CodeMode = CodeMode
+    OptimizationMode = OptimizationMode
     
     user = ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -55,6 +57,11 @@ class Document(TimeBasedModel):  # type: ignore[django-manager-missing]
         max_length=20,
         choices=CodeMode.choices,
         default=CodeMode.SUMMARIZE,
+    )
+    optimization_mode = CharField(
+        max_length=20,
+        choices=OptimizationMode.choices,
+        default=OptimizationMode.MANUAL,
     )
     additional_instructions = JSONField(
         default=list,

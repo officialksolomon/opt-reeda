@@ -1,7 +1,17 @@
 from django.contrib.auth.models import AbstractUser
-from django.db.models import CharField
+from django.db import models
+from django.db.models import CharField, BooleanField, IntegerField, DecimalField, DateTimeField, OneToOneField
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from typing import TYPE_CHECKING
+from core.helpers.models import TimeBasedModel
+
+if TYPE_CHECKING:
+    from django.db.models import ForeignKey
+else:
+    import auto_prefetch
+    ForeignKey = auto_prefetch.ForeignKey
+
 
 
 class User(AbstractUser):
@@ -24,3 +34,5 @@ class User(AbstractUser):
 
         """
         return reverse("users:detail", kwargs={"username": self.username})
+
+

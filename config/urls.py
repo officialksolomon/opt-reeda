@@ -8,6 +8,7 @@ from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView
 from drf_spectacular.views import SpectacularSwaggerView
 from core.applications.users.views import VerifyEmailConfirmView
+from core.applications.pricing.views import PricingView
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
@@ -16,16 +17,21 @@ urlpatterns = [
         TemplateView.as_view(template_name="pages/about.html"),
         name="about",
     ),
+    path(
+        "pricing/",
+        PricingView.as_view(),
+        name="pricing",
+    ),
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
     # User management
     path("users/", include("core.applications.users.urls", namespace="users")),
     path("documents/", include("core.applications.documents.urls", namespace="documents")),
-    path("accounts/", include("allauth.urls")),
     # API Base Router & OpenAPI Schema Documentation
     path("api/auth/", include("dj_rest_auth.urls")),
     path("api/auth/registration/account-confirm-email/<str:key>/", VerifyEmailConfirmView.as_view(), name="account_confirm_email"),
     path("api/auth/registration/", include("dj_rest_auth.registration.urls")),
+    path("accounts/", include("allauth.urls")),
     path("api/", include("config.api_router")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

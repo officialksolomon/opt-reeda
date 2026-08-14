@@ -91,9 +91,20 @@
     }
     
     .chunk-item.active-speaking {
-        background-color: #fef2f2; /* red-50 */
-        border-left: 4px solid #e5322d; /* brand */
-        color: #991b1b; /* red-800 */
+        background-color: #e5322d; /* brand */
+        border-left: 4px solid #b91c1c; /* darker red */
+    }
+    
+    .chunk-item.active-speaking > p.read-text {
+        color: #ffffff;
+    }
+    
+    .chunk-item .compare-dropdown {
+        display: none;
+    }
+    
+    .chunk-item.active-speaking .compare-dropdown {
+        display: block;
     }
 </style>
 {% endblock %}
@@ -118,6 +129,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     let chunksToPlay = [];
     let currentChunkIndex = 0;
+    let nextOverrideIndex = null;
     
     // Update labels dynamically
     rateInput.addEventListener('input', (e) => rateLabel.textContent = e.target.value + 'x');
@@ -151,7 +163,45 @@ document.addEventListener("DOMContentLoaded", function() {
     function enableControls() {
         if (document.querySelectorAll('.chunk-item').length > 0) {
             btnPlay.disabled = false;
+            attachChunkListeners();
         }
+    }
+    
+    function attachChunkListeners() {
+        document.querySelectorAll('.chunk-item').forEach((chunkEl, index) => {
+            // Ensure cursor looks clickable
+            chunkEl.classList.add('cursor-pointer');
+            
+            // Remove existing listener to avoid duplicates if HTMX swaps
+            chunkEl.replaceWith(chunkEl.cloneNode(true));
+        });
+        
+        // Re-query after cloning
+        document.querySelectorAll('.chunk-item').forEach((chunkEl, index) => {
+            chunkEl.addEventListener('click', function(e) {
+                // If clicked on the dropdown, pause playback and don't skip
+                if (e.target.closest('details')) {
+                    if (synth.speaking && !synth.paused) {
+                        pausePlayback();
+                    }
+                    return;
+                }
+
+                // Make sure chunksToPlay is populated
+                if (chunksToPlay.length === 0) {
+                    chunksToPlay = Array.from(document.querySelectorAll('.chunk-item'));
+                }
+
+                if (synth.speaking) {
+                    nextOverrideIndex = index;
+                    synth.cancel(); // triggers onend/onerror
+                } else {
+                    currentChunkIndex = index;
+                    synth.cancel(); // clear queue
+                    startPlaybackFrom(index);
+                }
+            });
+        });
     }
     
     enableControls();
@@ -195,32 +245,47 @@ document.addEventListener("DOMContentLoaded", function() {
         utterThis.rate = rateInput.value;
         
         utterThis.onend = function (event) {
-            currentChunkIndex++;
+            if (nextOverrideIndex !== null) {
+                currentChunkIndex = nextOverrideIndex;
+                nextOverrideIndex = null;
+            } else {
+                currentChunkIndex++;
+            }
             speakCurrentChunk();
         };
 
         utterThis.onerror = function (event) {
             console.error('SpeechSynthesisUtterance.onerror', event);
-            currentChunkIndex++;
+            if (nextOverrideIndex !== null) {
+                currentChunkIndex = nextOverrideIndex;
+                nextOverrideIndex = null;
+            } else {
+                currentChunkIndex++;
+            }
             speakCurrentChunk();
         };
 
         synth.speak(utterThis);
     }
 
-    function startPlayback() {
+    function startPlaybackFrom(index = 0) {
         chunksToPlay = Array.from(document.querySelectorAll('.chunk-item'));
         if (chunksToPlay.length === 0) return;
         
-        currentChunkIndex = 0;
+        currentChunkIndex = index;
         
         btnPlay.style.display = 'none';
+        btnResume.style.display = 'none';
         btnPause.style.display = 'inline-flex';
         btnPause.disabled = false;
         btnStop.disabled = false;
         btnNext.disabled = false;
         
         speakCurrentChunk();
+    }
+
+    function startPlayback() {
+        startPlaybackFrom(0);
     }
 
     function pausePlayback() {
@@ -236,6 +301,9 @@ document.addEventListener("DOMContentLoaded", function() {
             synth.resume();
             btnResume.style.display = 'none';
             btnPause.style.display = 'inline-flex';
+        } else if (!synth.speaking) {
+            // Fallback if trying to resume but speech stopped entirely
+            startPlaybackFrom(currentChunkIndex);
         }
     }
 

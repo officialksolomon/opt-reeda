@@ -30,6 +30,10 @@ class DocumentSerializer(serializers.ModelSerializer):
         source="get_code_mode_display",
         read_only=True,
     )
+    optimization_mode_display = serializers.CharField(
+        source="get_optimization_mode_display",
+        read_only=True,
+    )
 
     class Meta:
         model = Document
@@ -44,6 +48,8 @@ class DocumentSerializer(serializers.ModelSerializer):
             "status_display",
             "code_mode",
             "code_mode_display",
+            "optimization_mode",
+            "optimization_mode_display",
             "raw_text",
             "optimized_speech_text",
             "summary",
@@ -72,5 +78,9 @@ class DocumentProcessRequestSerializer(serializers.Serializer):
     code_mode = serializers.ChoiceField(
         choices=Document.CodeMode.choices,
         default=Document.CodeMode.SUMMARIZE,
+        required=False,
+    )
+    optimization_mode = serializers.ChoiceField(
+        choices=Document.OptimizationMode.choices,
         required=False,
     )

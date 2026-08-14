@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "documents/dashboard_base.html" %}
 
 {% block title %}Upload Document{% endblock %}
 
@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow" />
 {% endblock %}
 
-{% block content %}
+{% block dashboard_content %}
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     
     <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between">
@@ -130,7 +130,7 @@
         const form = document.getElementById('upload-form');
         
         // Add Tailwind classes to django inputs dynamically
-        const textInputs = document.querySelectorAll("input[type='text'], select, textarea");
+        const textInputs = document.querySelectorAll("#upload-form input[type='text'], #upload-form select, #upload-form textarea");
         const commonClasses = "block w-full appearance-none rounded-lg border border-gray-300 px-4 py-3 placeholder-gray-400 shadow-sm focus:border-brand focus:outline-none focus:ring-brand sm:text-sm bg-white font-medium transition duration-150";
         textInputs.forEach(input => input.className = commonClasses);
 
@@ -216,4 +216,4 @@
         });
     });
 </script>
-{% endblock %}
+{% endblock dashboard_content %}

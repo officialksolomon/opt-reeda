@@ -268,7 +268,7 @@ tags
 dump.rdb
 
 ### Project template
-my_awesome_project/media/
+core/media/
 
 # Databases
 db.sqlite3

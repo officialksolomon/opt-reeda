@@ -1,44 +1,137 @@
 {% extends "base.html" %}
-
 {% load static %}
 
-{% block title %}
-  User: 
-  
-    {{ object.username }}
-  
-  
-{% endblock title %}
+{% block title %}Profile: {{ object.username }}{% endblock title %}
+
 {% block content %}
-  <div class="container">
-    <div class="row">
-      <div class="col-sm-12">
-        <h2>
-        
-        
-          {{ object.username }}
-        
-      </h2>
-      {% if object.name %}
-        <p>{{ object.name }}</p>
-      {% endif %}
-    </div>
-  </div>
-  {% if object == request.user %}
-    <!-- Action buttons -->
-    <div class="row">
-      <div class="col-sm-12">
-        <a class="btn btn-primary" href="{% url 'users:update' %}" role="button">My Info</a>
-        <a class="btn btn-primary"
-           href="{% url 'account_email' %}"
-           role="button">E-Mail</a>
-        <a class="btn btn-primary"
-           href="{% url 'mfa_index' %}"
-           role="button">MFA</a>
-        <!-- Your Stuff: Custom user template urls -->
+<div class="min-h-[calc(100vh-64px)] bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto space-y-8">
+    
+    <!-- Profile Header Card -->
+    <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100 transition duration-300 hover:shadow-md">
+      <div class="h-32 bg-gradient-to-r from-red-600 to-red-400"></div>
+      <div class="px-6 py-6 sm:px-8 sm:flex sm:items-end sm:space-x-5 -mt-16 relative z-10">
+        <div class="flex">
+          <div class="h-24 w-24 rounded-full bg-white p-1 shadow-lg ring-4 ring-white flex items-center justify-center overflow-hidden bg-gray-100">
+            <span class="text-4xl font-bold text-red-500">{{ object.username|make_list|first|upper }}</span>
+          </div>
+        </div>
+        <div class="mt-4 sm:mt-0 sm:flex-1 sm:pt-4 sm:pb-1">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 truncate">{{ object.name|default:object.username }}</h1>
+              <p class="text-sm font-medium text-gray-500">@{{ object.username }}</p>
+            </div>
+            {% if object == request.user %}
+            <div>
+              <a href="{% url 'users:update' %}" class="inline-flex justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand transition-colors duration-200">
+                Edit Profile
+              </a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </div>
-    <!-- End Action buttons -->
-  {% endif %}
+
+    <!-- Account Details Section -->
+    <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100 transition duration-300 hover:shadow-md">
+      <div class="px-6 py-5 border-b border-gray-200 bg-gray-50/50">
+        <h3 class="text-lg leading-6 font-semibold text-gray-900">Account Information</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">Personal details and application settings.</p>
+      </div>
+      <div class="px-6 py-5">
+        <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+          <div class="sm:col-span-1">
+            <dt class="text-sm font-medium text-gray-500">Full name</dt>
+            <dd class="mt-1 text-sm text-gray-900 font-semibold">{{ object.name|default:"Not provided" }}</dd>
+          </div>
+          <div class="sm:col-span-1">
+            <dt class="text-sm font-medium text-gray-500">Username</dt>
+            <dd class="mt-1 text-sm text-gray-900 font-semibold">{{ object.username }}</dd>
+          </div>
+          <div class="sm:col-span-1">
+            <dt class="text-sm font-medium text-gray-500">Email address</dt>
+            <dd class="mt-1 text-sm text-gray-900 font-semibold">{{ object.email }}</dd>
+          </div>
+          <div class="sm:col-span-1">
+            <dt class="text-sm font-medium text-gray-500">Member since</dt>
+            <dd class="mt-1 text-sm text-gray-900 font-semibold">{{ object.date_joined|date:"F j, Y" }}</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Subscription Section -->
+    <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100 transition duration-300 hover:shadow-md">
+      <div class="px-6 py-5 border-b border-gray-200 bg-gray-50/50">
+        <h3 class="text-lg leading-6 font-semibold text-gray-900">Subscription Plan</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">Manage your billing and current tier.</p>
+      </div>
+      <div class="px-6 py-5 flex items-center justify-between flex-wrap gap-4">
+        <div>
+          {% if object.subscription and object.subscription.is_active %}
+            <div class="flex items-center space-x-3">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                Active
+              </span>
+              <span class="text-lg font-bold text-gray-900">{{ object.subscription.price.plan.name }}</span>
+            </div>
+            <p class="mt-1 text-sm text-gray-500">Your plan renews automatically based on your billing cycle.</p>
+          {% else %}
+            <div class="flex items-center space-x-3">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                Free Tier
+              </span>
+            </div>
+            <p class="mt-1 text-sm text-gray-500">Upgrade to a premium plan to unlock more processing power.</p>
+          {% endif %}
+        </div>
+        <div>
+          <a href="{% url 'pricing' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-brand hover:bg-brandHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand transition-colors duration-200">
+            {% if object.subscription and object.subscription.is_active %}Upgrade Plan{% else %}View Plans{% endif %}
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security & Settings Section -->
+    {% if object == request.user %}
+    <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100 transition duration-300 hover:shadow-md">
+      <div class="px-6 py-5 border-b border-gray-200 bg-gray-50/50">
+        <h3 class="text-lg leading-6 font-semibold text-gray-900">Security & Authentication</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">Manage your passwords and two-factor authentication.</p>
+      </div>
+      <div class="px-6 py-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <a href="{% url 'account_email' %}" class="group flex items-center p-4 border border-gray-200 rounded-lg hover:border-brand hover:bg-red-50/30 transition-all duration-200">
+            <div class="flex-shrink-0 h-10 w-10 bg-gray-100 group-hover:bg-red-100 rounded-full flex items-center justify-center transition-colors">
+              <svg class="h-5 w-5 text-gray-500 group-hover:text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <h4 class="text-base font-semibold text-gray-900 group-hover:text-brand transition-colors">Email Management</h4>
+              <p class="text-sm text-gray-500">Update your primary email address.</p>
+            </div>
+          </a>
+
+          <a href="{% url 'mfa_index' %}" class="group flex items-center p-4 border border-gray-200 rounded-lg hover:border-brand hover:bg-red-50/30 transition-all duration-200">
+            <div class="flex-shrink-0 h-10 w-10 bg-gray-100 group-hover:bg-red-100 rounded-full flex items-center justify-center transition-colors">
+              <svg class="h-5 w-5 text-gray-500 group-hover:text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <h4 class="text-base font-semibold text-gray-900 group-hover:text-brand transition-colors">Two-Factor Auth</h4>
+              <p class="text-sm text-gray-500">Add an extra layer of security.</p>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    
+  </div>
 </div>
 {% endblock content %}
