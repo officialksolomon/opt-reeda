@@ -1,0 +1,99 @@
+{# LLM fallback toast — shown when the AI optimizer exhausted all retries
+   and the document was completed using offline (regex) mode instead. #}
+<div
+  id="llm-fallback-toast"
+  role="alertdialog"
+  aria-live="assertive"
+  aria-atomic="true"
+  aria-labelledby="llm-toast-title"
+  aria-describedby="llm-toast-desc"
+  class="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
+>
+  {# Backdrop #}
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto" id="llm-fallback-backdrop"></div>
+
+  {# Card #}
+  <div class="relative pointer-events-auto w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 scale-100 opacity-100">
+
+    {# Accent top bar — red/rose to indicate a service issue, not an upgrade prompt #}
+    <div class="h-1.5 w-full bg-gradient-to-r from-rose-500 via-rose-400 to-orange-400"></div>
+
+    <div class="px-6 pt-5 pb-6">
+
+      {# Icon + Title #}
+      <div class="flex items-start gap-4 mb-3">
+        <div class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-rose-50 ring-1 ring-rose-200">
+          <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9.303 3.376c.866 1.5-.217 3.374-1.948 3.374H4.645c-1.73 0-2.813-1.874-1.948-3.374l7.658-13.224c.866-1.5 3.032-1.5 3.898 0l7.658 13.224zM12 15.75h.007v.008H12v-.008z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 id="llm-toast-title" class="text-base font-bold text-gray-900 leading-snug">AI Optimization Unavailable</h2>
+          <p id="llm-toast-desc" class="mt-1 text-sm text-gray-500 leading-relaxed">
+            The AI service didn't respond after multiple retries. Your document was optimized using <strong class="text-gray-700">offline mode</strong> — it's still ready to listen to.
+          </p>
+        </div>
+      </div>
+
+      {# Detail info #}
+      <div class="mt-3 mb-5 rounded-xl border border-rose-100 bg-rose-50 p-3 space-y-1.5 text-xs text-gray-600">
+        <div class="flex items-start gap-2">
+          <svg class="w-3.5 h-3.5 text-rose-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd"/></svg>
+          AI optimization failed after retries — content may be less natural
+        </div>
+        <div class="flex items-start gap-2">
+          <svg class="w-3.5 h-3.5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          Offline mode still handles abbreviations, numbers &amp; formatting
+        </div>
+        <div class="flex items-start gap-2">
+          <svg class="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd"/></svg>
+          You can re-process this document later when the AI service recovers
+        </div>
+      </div>
+
+      {# Actions #}
+      <div class="flex gap-3">
+        <button
+          type="button"
+          id="llm-toast-dismiss-btn"
+          class="flex-1 rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-600 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2"
+        >
+          Got it, continue
+        </button>
+        <button
+          type="button"
+          id="llm-toast-retry-btn"
+          class="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-gray-300"
+          onclick="window.location.reload()"
+        >
+          Retry
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const toast = document.getElementById('llm-fallback-toast');
+  const backdrop = document.getElementById('llm-fallback-backdrop');
+  const dismissBtn = document.getElementById('llm-toast-dismiss-btn');
+
+  function closeToast() {
+    toast.classList.add('opacity-0', 'pointer-events-none');
+    toast.querySelector('.relative').classList.add('scale-95');
+    setTimeout(() => toast.remove(), 300);
+  }
+
+  dismissBtn.addEventListener('click', closeToast);
+  backdrop.addEventListener('click', closeToast);
+
+  document.addEventListener('keydown', function escHandler(e) {
+    if (e.key === 'Escape') {
+      closeToast();
+      document.removeEventListener('keydown', escHandler);
+    }
+  });
+})();
+</script>

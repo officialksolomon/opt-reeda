@@ -14,6 +14,7 @@ from core.applications.documents.forms import DocumentForm
 from core.applications.documents.models import Document
 from core.applications.documents.models import DocumentChunk
 from core.applications.documents.services import PipelineService
+from core.applications.documents.services import UserOptimizationExampleService
 from core.applications.pricing.querysets import user_has_feature
 from core.helpers.enums import OptimizationMode
 
@@ -156,10 +157,13 @@ def process_document_htmx(request, pk):
             "manual_mode_forced": manual_mode_forced,
         },
     )
-    # When manual mode was forced, fire a client-side event that the page
-    # JavaScript listens for to show the upgrade toast.
-    if manual_mode_forced and document.status == Document.Status.COMPLETED:
-        response["HX-Trigger"] = "manualModeForced"
+    # Priority order: manual_mode_forced > llm_fallback (both use offline mode
+    # but for different reasons — different toast messages).
+    if document.status == Document.Status.COMPLETED:
+        if manual_mode_forced:
+            response["HX-Trigger"] = "manualModeForced"
+        elif getattr(document, "_llm_fallback_used", False):
+            response["HX-Trigger"] = "llmFallbackUsed"
     return response
 
 
@@ -171,7 +175,14 @@ def edit_chunk_htmx(request, pk):
     if request.method == "POST":
         if has_edit_feature:
             new_text = request.POST.get("optimized_text", "").strip()
-            if new_text:
+            if new_text and new_text != chunk.optimized_text and new_text != chunk.raw_text:
+                # Capture the meaningful edit for LLM few-shot learning and regex generation
+                UserOptimizationExampleService.capture_example(
+                    user=request.user,
+                    domain_type=chunk.document.domain_type,
+                    raw_text=chunk.raw_text,
+                    edited_text=new_text,
+                )
                 chunk.optimized_text = new_text
                 chunk.save()
         return render(
@@ -243,3 +254,13 @@ def manual_mode_toast_view(request):
     HX-Trigger after completing document processing in offline mode.
     """
     return render(request, "documents/partials/manual_mode_toast.html")
+
+
+def llm_fallback_toast_view(request):
+    """
+    Renders the LLM-fallback toast partial.
+    Called via htmx.ajax() when the server fires the `llmFallbackUsed`
+    HX-Trigger after the LLM optimizer exhausted all retries and fell
+    back to offline mode mid-processing.
+    """
+    return render(request, "documents/partials/llm_fallback_toast.html")

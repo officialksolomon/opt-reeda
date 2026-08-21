@@ -1,15 +1,27 @@
 import io
+import json
 import os
 import re
+import threading
 import time
 from typing import Any
 from typing import BinaryIO
 import docx
 from django.conf import settings
 from litellm import completion
+
+
+class LLMExhaustedError(Exception):
+    """
+    Raised by LLMOptimizerService when all retry attempts are exhausted.
+    Caught by PipelineService per-chunk to fall back to ManualOptimizerService
+    while preserving the overall pipeline result and signalling the view layer.
+    """
 from PyPDF2 import PdfReader
 
 from core.applications.documents.models import Document
+from core.applications.documents.models import OptimizationRegexRule
+from core.applications.documents.models import UserOptimizationExample
 from core.helpers.enums import PREDEFINED_PROMPTS
 from core.helpers.enums import OptimizationMode
 
@@ -151,6 +163,49 @@ class BaseCleanerService:
         return result
 
 
+class UserOptimizationExampleService:
+    """Manages capturing and pruning user edits to chunks."""
+
+    @classmethod
+    def capture_example(
+        cls,
+        user: Any,
+        domain_type: str,
+        raw_text: str,
+        edited_text: str,
+    ) -> None:
+        """Saves a user edit for few-shot learning and regex rule generation."""
+        if not user or not user.is_authenticated:
+            return
+
+        # Save example
+        UserOptimizationExample.objects.create(
+            user=user,
+            domain_type=domain_type,
+            raw_text=raw_text,
+            edited_text=edited_text,
+        )
+
+        # Keep only the 5 most recent examples per user/domain
+        examples = UserOptimizationExample.objects.filter(
+            user=user, domain_type=domain_type
+        ).order_by("-created_at")
+        
+        if examples.count() > 5:
+            ids_to_keep = list(examples.values_list("id", flat=True)[:5])
+            UserOptimizationExample.objects.filter(
+                user=user, domain_type=domain_type
+            ).exclude(id__in=ids_to_keep).delete()
+
+        # Fire-and-forget thread to generate regex rule via LLM
+        def background_generate() -> None:
+            LLMOptimizerService.generate_regex_rule(
+                raw_text, edited_text, user, domain_type
+            )
+
+        threading.Thread(target=background_generate, daemon=True).start()
+
+
 class LLMOptimizerService:
     """Uses LLM to optimize document chunks based on domain."""
 
@@ -161,6 +216,7 @@ class LLMOptimizerService:
         domain: str,
         code_mode: str | None = None,
         additional_instructions: Any = None,
+        user: Any = None,
     ) -> str:
         """
         Optimize a text chunk using an LLM based on its domain.
@@ -202,10 +258,25 @@ class LLMOptimizerService:
                     + "\n".join(f"- {p}" for p in prompts)
                 )
 
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": text},
-        ]
+        messages = [{"role": "system", "content": system_prompt}]
+
+        # Inject few-shot examples if available
+        if user and user.is_authenticated:
+            examples = UserOptimizationExample.objects.filter(
+                user=user, domain_type=domain
+            ).order_by("created_at")
+            if examples.exists():
+                messages.append(
+                    {
+                        "role": "system",
+                        "content": "The following are historical examples of how the user prefers their text optimized. Replicate these patterns exactly.",
+                    }
+                )
+                for ex in examples:
+                    messages.append({"role": "user", "content": ex.raw_text})
+                    messages.append({"role": "assistant", "content": ex.edited_text})
+
+        messages.append({"role": "user", "content": text})
 
         last_exc: Exception | None = None
         for attempt in range(1, max_retries + 1):
@@ -220,8 +291,68 @@ class LLMOptimizerService:
                     # Exponential backoff: 1s, 2s, 4s …
                     time.sleep(2 ** (attempt - 1))
 
-        # All retries exhausted — fall back to offline optimizer
-        return ManualOptimizerService.optimize_chunk(text, domain, code_mode)
+        # All retries exhausted — signal the caller with a typed exception
+        # so the pipeline can fall back gracefully AND inform the UI.
+        raise LLMExhaustedError(
+            f"LLM optimization failed after {max_retries} attempt(s): {last_exc}"
+        )
+
+    @classmethod
+    def generate_regex_rule(
+        cls, raw_text: str, edited_text: str, user: Any, domain_type: str
+    ) -> None:
+        """
+        Uses LLM to deduce a regex replacement rule from a user's edit,
+        and saves it to the OptimizationRegexRule bank.
+        """
+        model = getattr(settings, "LLM_MODEL", "gpt-4o-mini")
+        timeout = getattr(settings, "LLM_TIMEOUT", 15)
+
+        system_prompt = (
+            "You are a Python regex expert. "
+            "Given the user's original raw text and their final edited text, "
+            "deduce the single core substitution pattern they applied and generate a Python `re.sub()` compatible regex pattern and replacement string. "
+            "Respond ONLY with a valid JSON object in this format, and absolutely nothing else: "
+            '{"pattern": "your_regex_here", "replacement": "your_replacement_here"}'
+        )
+
+        user_content = (
+            f"RAW TEXT:\n{raw_text}\n\nEDITED TEXT:\n{edited_text}"
+        )
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+        ]
+
+        try:
+            response: Any = completion(
+                model=model, messages=messages, timeout=timeout
+            )
+            msg = getattr(response.choices[0], "message", None)
+            content = getattr(msg, "content", "").strip()
+            
+            # Basic cleanup if the LLM wraps it in markdown code blocks
+            if content.startswith("```json"):
+                content = content[7:-3].strip()
+            elif content.startswith("```"):
+                content = content[3:-3].strip()
+
+            parsed = json.loads(content)
+            pattern = parsed.get("pattern")
+            replacement = parsed.get("replacement")
+
+            if pattern and replacement is not None:
+                OptimizationRegexRule.objects.create(
+                    user=user,
+                    domain_type=domain_type,
+                    pattern=pattern,
+                    replacement=replacement,
+                )
+        except Exception:
+            # Swallow exceptions in fire-and-forget task; we don't want to crash
+            # background threads over a failed LLM regex deduction.
+            pass
 
 
 class ManualOptimizerService:
@@ -233,6 +364,7 @@ class ManualOptimizerService:
         text: str,
         domain: str,
         code_mode: str | None = None,
+        user: Any = None,
     ) -> str:
         """
         Offline formatting using sophisticated regex and string replacements
@@ -289,6 +421,20 @@ class ManualOptimizerService:
                 return match.group(0).replace("/", " slash ").replace(".", " dot ")
 
             res = re.sub(r"\b[\w\-]+(?:/[\w\-]+)+\.[\w]+\b", path_replacer, res)
+
+        # Apply banked user regex rules if a user is provided
+        if user and user.is_authenticated:
+            rules = OptimizationRegexRule.objects.filter(
+                user=user, domain_type=domain, is_active=True
+            ).order_by("created_at")
+            
+            for rule in rules:
+                try:
+                    # Guard against runaway regex execution if LLM generated a bad pattern
+                    res = re.sub(rule.pattern, rule.replacement, res)
+                except Exception:
+                    # Ignore bad rules to gracefully degrade
+                    pass
 
         return res
 
@@ -391,9 +537,14 @@ class PipelineService:
             # Create Chunks FIRST from base_cleaned text
             chunks = cls._create_chunks(document, base_cleaned)
 
-            # Optimize each chunk based on optimization mode
+            # Optimize each chunk based on optimization mode.
+            # For LLM mode, catch LLMExhaustedError per-chunk so one failed
+            # chunk does not abort the entire document. The document is still
+            # completed, but _llm_fallback_used is set so the view can notify
+            # the user via a toast.
             optimized_full_text = []
             opt_mode = str(document.optimization_mode)
+            llm_fallback_used = False
 
             for chunk in chunks:
                 if opt_mode == OptimizationMode.MANUAL:
@@ -401,21 +552,35 @@ class PipelineService:
                         str(chunk.raw_text),
                         domain,
                         code_mode=str(document.code_mode),
+                        user=document.user,
                     )
                 else:
-                    optimized_chunk_text = LLMOptimizerService.optimize_chunk(
-                        str(chunk.raw_text),
-                        domain,
-                        code_mode=str(document.code_mode),
-                        additional_instructions=getattr(
-                            document,
-                            "additional_instructions",
-                            None,
-                        ),
-                    )
+                    try:
+                        optimized_chunk_text = LLMOptimizerService.optimize_chunk(
+                            str(chunk.raw_text),
+                            domain,
+                            code_mode=str(document.code_mode),
+                            additional_instructions=getattr(
+                                document,
+                                "additional_instructions",
+                                None,
+                            ),
+                            user=document.user,
+                        )
+                    except LLMExhaustedError:
+                        llm_fallback_used = True
+                        optimized_chunk_text = ManualOptimizerService.optimize_chunk(
+                            str(chunk.raw_text),
+                            domain,
+                            code_mode=str(document.code_mode),
+                            user=document.user,
+                        )
                 chunk.optimized_text = optimized_chunk_text
                 chunk.save(update_fields=["optimized_text"])
                 optimized_full_text.append(optimized_chunk_text)
+
+            # Stamp transient flag so the view can fire the correct UI toast.
+            document._llm_fallback_used = llm_fallback_used
 
             document.optimized_speech_text = "\n\n".join(optimized_full_text)
             document.status = Document.Status.COMPLETED

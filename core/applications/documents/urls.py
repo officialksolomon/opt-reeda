@@ -9,6 +9,7 @@ from core.applications.documents.views import process_document_htmx
 from core.applications.documents.views import edit_chunk_htmx
 from core.applications.documents.views import record_chunk_audio_htmx
 from core.applications.documents.views import manual_mode_toast_view
+from core.applications.documents.views import llm_fallback_toast_view
 
 from core.applications.documents.views import AudioListView
 
@@ -25,4 +26,5 @@ urlpatterns = [
     path("chunks/<int:pk>/edit/", edit_chunk_htmx, name="chunk-edit"),
     path("chunks/<int:pk>/record/", record_chunk_audio_htmx, name="chunk-record"),
     path("manual-mode-toast/", manual_mode_toast_view, name="manual-mode-toast"),
+    path("llm-fallback-toast/", llm_fallback_toast_view, name="llm-fallback-toast"),
 ]

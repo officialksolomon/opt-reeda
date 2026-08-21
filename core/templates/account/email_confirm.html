@@ -4,7 +4,7 @@
 {% block title %}Confirm Email Address{% endblock title %}
 
 {% block content %}
-<div class="flex min-h-[calc(100vh-64px)] bg-gray-50 flex-col justify-center py-12 sm:px-6 lg:px-8">
+<div class="flex min-h-[calc(100vh-64px)] bg-gray-50 flex-col justify-center py-12 sm:px-6 lg:">
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Confirm Email Address
@@ -12,7 +12,7 @@
     </div>
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div class="bg-white py-8 px-4 shadow-sm sm:rounded-xl border border-gray-100 sm:px-10">
+        <div class="bg-white py-8  shadow-sm sm:rounded-xl border border-gray-100 sm:px-10">
             {% if confirmation %}
                 {% user_display confirmation.email_address.user as user_display %}
                 {% if can_confirm %}

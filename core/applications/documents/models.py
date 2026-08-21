@@ -127,3 +127,42 @@ class ChunkAudioRecording(TimeBasedModel):
 
     def __str__(self) -> str:
         return f"Audio for {self.chunk}"
+
+
+class UserOptimizationExample(TimeBasedModel):
+    user = ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="optimization_examples",
+    )
+    domain_type = CharField(max_length=30, choices=DomainType.choices)
+    raw_text = TextField()
+    edited_text = TextField()
+
+    class Meta(TimeBasedModel.Meta):
+        verbose_name = _("User Optimization Example")
+        verbose_name_plural = _("User Optimization Examples")
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Example by {self.user} for {self.domain_type}"
+
+
+class OptimizationRegexRule(TimeBasedModel):
+    user = ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="regex_rules",
+    )
+    domain_type = CharField(max_length=30, choices=DomainType.choices)
+    pattern = TextField()
+    replacement = TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta(TimeBasedModel.Meta):
+        verbose_name = _("Optimization Regex Rule")
+        verbose_name_plural = _("Optimization Regex Rules")
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Regex Rule by {self.user} for {self.domain_type}"

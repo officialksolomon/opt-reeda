@@ -6,7 +6,7 @@
 {% block top_navbar %}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="  py-8">
     
     <!-- Header -->
     <div class="mb-8 border-b border-gray-200 pb-4">
@@ -384,6 +384,18 @@ document.addEventListener("DOMContentLoaded", function() {
         const target = document.getElementById("manual-mode-toast-target");
         if (target && !document.getElementById("manual-mode-toast")) {
             htmx.ajax("GET", "{% url 'documents:manual-mode-toast' %}", {
+                target: "#manual-mode-toast-target",
+                swap: "innerHTML",
+            });
+        }
+    });
+
+    // Fired by HX-Trigger: "llmFallbackUsed" when the AI optimizer exhausted
+    // all retries and the document was completed using offline mode instead.
+    document.addEventListener("llmFallbackUsed", function () {
+        const target = document.getElementById("manual-mode-toast-target");
+        if (target && !document.getElementById("llm-fallback-toast")) {
+            htmx.ajax("GET", "{% url 'documents:llm-fallback-toast' %}", {
                 target: "#manual-mode-toast-target",
                 swap: "innerHTML",
             });
