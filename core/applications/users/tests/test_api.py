@@ -30,7 +30,7 @@ class AuthAPITests(APITestCase):
         self.registration_url = "/api/auth/registration/"
 
     def test_login_obtains_jwt(self):
-        data = {"username": "testuser", "password": "testpassword123"}
+        data = {"email": "testuser@example.com", "password": "testpassword123"}
         response = self.client.post(self.login_url, data)
         assert response.status_code == status.HTTP_200_OK
         assert "access" in response.data
@@ -40,7 +40,7 @@ class AuthAPITests(APITestCase):
 
     def test_jwt_refresh(self):
         # First login to get a valid refresh token
-        data = {"username": "testuser", "password": "testpassword123"}
+        data = {"email": "testuser@example.com", "password": "testpassword123"}
         login_resp = self.client.post(self.login_url, data)
         refresh_token = login_resp.data["refresh"]
 
@@ -51,7 +51,7 @@ class AuthAPITests(APITestCase):
         assert "access" in refresh_resp.data
 
     def test_user_profile_retrieval(self):
-        login_data = {"username": "testuser", "password": "testpassword123"}
+        login_data = {"email": "testuser@example.com", "password": "testpassword123"}
         login_resp = self.client.post(self.login_url, login_data)
         access_token = login_resp.data["access"]
 

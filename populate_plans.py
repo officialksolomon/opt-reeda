@@ -27,6 +27,7 @@ f_code = Feature.objects.create(name="Smart Code Block Summarization", key="code
 f_analytics = Feature.objects.create(name="Analytics", key="analytics", value_type="boolean")
 f_api = Feature.objects.create(name="API access", key="api_access", value_type="boolean")
 f_domain = Feature.objects.create(name="Custom domain", key="custom_domain", value_type="boolean")
+f_edit_text = Feature.objects.create(name="Edit Optimized Text", key="edit_optimized_text", value_type="boolean")
 f_total_docs = Feature.objects.create(name="Documents limit", key="documents_limit", value_type="integer")
 
 
@@ -75,6 +76,7 @@ def assign_premium_features(plan_obj, doc_limit):
     PlanFeature.objects.create(plan=plan_obj, feature=f_analytics, value=True)
     PlanFeature.objects.create(plan=plan_obj, feature=f_api, value=True)
     PlanFeature.objects.create(plan=plan_obj, feature=f_domain, value=True)
+    PlanFeature.objects.create(plan=plan_obj, feature=f_edit_text, value=True)
     PlanFeature.objects.create(plan=plan_obj, feature=f_total_docs, value=doc_limit)
 
 # Assign features with diff document limits

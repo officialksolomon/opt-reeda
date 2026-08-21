@@ -13,6 +13,7 @@
     <meta property="og:description" content="Turn your documents into structured, natural-sounding audio." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="csrf-token" content="{{ csrf_token }}" />
     {% endblock %}
     <link rel="icon" href="{% static 'images/favicons/favicon.ico' %}" />
     
@@ -56,6 +57,7 @@
   </head>
   
   <body class="bg-bodyBg text-gray-800 antialiased min-h-screen flex flex-col font-sans">
+    <div style="display:none;" id="global-csrf">{% csrf_token %}</div>
     
     {% block top_navbar %}
     <!-- Top Navbar -->
@@ -72,6 +74,7 @@
               <a href="{% url 'pricing' %}" class="text-white hover:text-gray-200 font-semibold uppercase tracking-wide text-sm transition focus:outline-none focus:underline">Pricing</a>
               {% if request.user.is_authenticated %}
               <a href="{% url 'documents:document-list' %}" class="text-white hover:text-gray-200 font-semibold uppercase tracking-wide text-sm transition focus:outline-none focus:underline">Library</a>
+              <a href="{% url 'documents:audio-list' %}" class="text-white hover:text-gray-200 font-semibold uppercase tracking-wide text-sm transition focus:outline-none focus:underline">Audio</a>
               {% endif %}
             </nav>
           </div>
@@ -122,6 +125,7 @@
           <a href="{% url 'pricing' %}" class="block px-3 py-2 rounded-md text-base font-semibold text-white hover:bg-brand focus:outline-none focus:bg-brand">Pricing</a>
           {% if request.user.is_authenticated %}
           <a href="{% url 'documents:document-list' %}" class="block px-3 py-2 rounded-md text-base font-semibold text-white hover:bg-brand focus:outline-none focus:bg-brand">Library</a>
+          <a href="{% url 'documents:audio-list' %}" class="block px-3 py-2 rounded-md text-base font-semibold text-white hover:bg-brand focus:outline-none focus:bg-brand">Audio</a>
           <a href="{% url 'users:detail' request.user.username %}" class="block px-3 py-2 rounded-md text-base font-semibold text-white hover:bg-brand focus:outline-none focus:bg-brand">My Profile</a>
           <a href="{% url 'account_logout' %}" class="block px-3 py-2 rounded-md text-base font-semibold text-white hover:bg-brand focus:outline-none focus:bg-brand">Sign Out</a>
           {% else %}

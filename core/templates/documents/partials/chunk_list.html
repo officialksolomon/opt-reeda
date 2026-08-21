@@ -21,13 +21,7 @@
                                     </h6>
                                     <p class="text-gray-600 font-mono text-xs whitespace-pre-wrap leading-relaxed">{{ chunk.raw_text }}</p>
                                 </div>
-                                <div class="bg-green-50 p-3 rounded-md border border-green-200 shadow-sm">
-                                    <h6 class="font-bold text-green-800 mb-2 border-b border-green-200 pb-1 flex items-center">
-                                        <svg class="w-4 h-4 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                        After (Optimized)
-                                    </h6>
-                                    <p class="text-green-700 font-mono text-xs whitespace-pre-wrap leading-relaxed">{{ chunk.optimized_text }}</p>
-                                </div>
+                                {% include "documents/partials/chunk_optimized_display.html" with chunk=chunk has_edit_feature=has_edit_feature %}
                             </div>
                         </details>
                     </div>

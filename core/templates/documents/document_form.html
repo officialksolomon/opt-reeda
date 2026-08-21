@@ -49,7 +49,7 @@
                             <div class="text-gray-600 text-lg">
                                 <span class="font-bold text-brand group-hover:text-brandHover">Click to browse</span> or drag and drop here
                             </div>
-                            <div class="text-sm text-gray-500 font-medium">PDF, DOCX, TXT {% if not request.user.is_authenticated %}(Max 1MB for guests){% else %}(Up to 10MB){% endif %}</div>
+                            <div class="text-sm text-gray-500 font-medium">PDF, DOCX, TXT (Up to 10MB)</div>
                         </div>
                         
                         <!-- Selected File UI (Hidden by default) -->
@@ -149,18 +149,7 @@
             if (this.files && this.files.length > 0) {
                 const file = this.files[0];
                 
-                // Client-side validation for anonymous users
-                {% if not request.user.is_authenticated %}
-                const maxSizeBytes = 1 * 1024 * 1024; // 1MB
-                if (file.size > maxSizeBytes) {
-                    alert("Anonymous users can only upload files up to 1MB. Please log in to upload larger files.");
-                    this.value = "";
-                    defaultUi.classList.remove('hidden');
-                    selectedUi.classList.add('hidden');
-                    dropZone.classList.remove('border-green-400', 'bg-green-50');
-                    return;
-                }
-                {% endif %}
+                // No file size client-side block for anonymous users (they sign in after upload anyway)
                 
                 // Update UI
                 fileNameEl.textContent = file.name;

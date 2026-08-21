@@ -25,9 +25,11 @@ class UserDetailView(LoginRequiredMixin, DetailView):
 user_detail_view = UserDetailView.as_view()
 
 
+from core.applications.users.forms import UserUpdateForm
+
 class UserUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = User
-    fields = ["name"]
+    form_class = UserUpdateForm
     success_message = _("Information successfully updated")
 
     def get_success_url(self) -> str:

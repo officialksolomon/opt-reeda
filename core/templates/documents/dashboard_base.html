@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% load static %}
 {% block title %}Dashboard{% endblock title %}
 
 {% block top_navbar %}
@@ -28,6 +28,7 @@
     </div>
 
     <div class="flex items-center space-x-4">
+      {% if request.user.is_authenticated %}
       <div class="relative group">
         <button aria-expanded="false" aria-haspopup="true" class="flex items-center text-gray-700 font-medium hover:text-gray-900 focus:outline-none rounded p-1 transition">
           <span class="mr-2 pl-2 hidden sm:block">{{ request.user.username }}</span>
@@ -44,6 +45,10 @@
           </div>
         </div>
       </div>
+      {% else %}
+      <a href="{% url 'account_login' %}" class="text-sm font-medium text-gray-700 hover:text-gray-900 transition">Log In</a>
+      <a href="{% url 'account_signup' %}" class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand hover:bg-brandHover transition">Sign Up</a>
+      {% endif %}
     </div>
   </div>
 </header>
@@ -54,6 +59,7 @@
     <!-- Sidebar -->
     <aside class="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col flex-shrink-0">
         <div class="p-6">
+            {% if request.user.is_authenticated %}
             <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Library</h2>
             <nav class="space-y-2">
                 <a href="{% url 'documents:document-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium {% if request.resolver_match.url_name == 'document-list' %}bg-red-50 text-brand{% else %}text-gray-600 hover:bg-gray-100 hover:text-gray-900{% endif %} transition">
@@ -63,6 +69,10 @@
                 <a href="{% url 'documents:document-table' %}" class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium {% if request.resolver_match.url_name == 'document-table' %}bg-red-50 text-brand{% else %}text-gray-600 hover:bg-gray-100 hover:text-gray-900{% endif %} transition">
                     <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
                     All Documents
+                </a>
+                <a href="{% url 'documents:audio-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium {% if request.resolver_match.url_name == 'audio-list' %}bg-red-50 text-brand{% else %}text-gray-600 hover:bg-gray-100 hover:text-gray-900{% endif %} transition">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2zm12-3c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2z"></path></svg>
+                    Audio
                 </a>
                 <a href="{% url 'documents:document-upload' %}" class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition">
                     <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -77,6 +87,15 @@
                     My Profile
                 </a>
             </nav>
+            {% else %}
+            <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Get Started</h2>
+            <nav class="space-y-2">
+                <a href="{% url 'documents:document-upload' %}" class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-brand bg-red-50 hover:bg-red-100 transition">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Upload Document
+                </a>
+            </nav>
+            {% endif %}
         </div>
     </aside>
 

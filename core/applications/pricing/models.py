@@ -4,6 +4,8 @@ from django.db.models import CharField, BooleanField, DecimalField, DateTimeFiel
 from django.utils.translation import gettext_lazy as _
 from typing import TYPE_CHECKING
 from core.helpers.models import TimeBasedModel
+from core.helpers.enums import SubscriptionStatus
+from core.applications.pricing.querysets import PlanManager, SubscriptionManager
 
 if TYPE_CHECKING:
     from django.db.models import ForeignKey
@@ -12,7 +14,9 @@ else:
     ForeignKey = auto_prefetch.ForeignKey
 
 
-class Plan(TimeBasedModel):
+class Plan(TimeBasedModel):  # type: ignore[django-manager-missing]
+    objects = PlanManager()
+
     name = CharField(max_length=100)
     slug = SlugField(unique=True)
     description = CharField(max_length=255, blank=True)
@@ -68,10 +72,12 @@ class Price(TimeBasedModel):
         return f"{self.plan.name} - {self.amount} {self.currency}/{self.interval}"
 
 
-class Subscription(TimeBasedModel):
+class Subscription(TimeBasedModel):  # type: ignore[django-manager-missing]
+    objects = SubscriptionManager()
+
     user = ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="subscriptions")
     price = ForeignKey(Price, on_delete=models.RESTRICT, related_name="subscriptions")
-    status = CharField(max_length=20, default="active", help_text=_("E.g., active, canceled, past_due"))
+    status = CharField(max_length=20, choices=SubscriptionStatus.choices, default=SubscriptionStatus.ACTIVE, help_text=_("E.g., active, canceled, past_due"))
     started_at = DateTimeField(auto_now_add=True)
     current_period_start = DateTimeField(null=True, blank=True)
     current_period_end = DateTimeField(null=True, blank=True)

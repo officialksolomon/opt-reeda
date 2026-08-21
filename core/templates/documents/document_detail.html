@@ -3,6 +3,8 @@
 
 {% block title %}{{ document.title }} - Playback{% endblock %}
 
+{% block top_navbar %}{% endblock %}
+
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     
@@ -80,6 +82,9 @@
         
     </div>
 </div>
+
+{# Mount target for the manual-mode upgrade toast (populated via HTMX OOB or JS) #}
+<div id="manual-mode-toast-target"></div>
 
 <style>
     .chunk-item {
@@ -168,39 +173,45 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     function attachChunkListeners() {
-        document.querySelectorAll('.chunk-item').forEach((chunkEl, index) => {
+        document.querySelectorAll('.chunk-item').forEach((chunkEl) => {
             // Ensure cursor looks clickable
             chunkEl.classList.add('cursor-pointer');
-            
-            // Remove existing listener to avoid duplicates if HTMX swaps
-            chunkEl.replaceWith(chunkEl.cloneNode(true));
         });
-        
-        // Re-query after cloning
-        document.querySelectorAll('.chunk-item').forEach((chunkEl, index) => {
-            chunkEl.addEventListener('click', function(e) {
-                // If clicked on the dropdown, pause playback and don't skip
-                if (e.target.closest('details')) {
-                    if (synth.speaking && !synth.paused) {
-                        pausePlayback();
-                    }
-                    return;
-                }
+        // We no longer clone nodes or attach individual listeners here.
+        // Event delegation is handled below.
+    }
+    
+    // Attach ONE event listener to the wrapper for event delegation
+    const chunksWrapper = document.getElementById('chunks-wrapper');
+    if (chunksWrapper) {
+        chunksWrapper.addEventListener('click', function(e) {
+            const chunkEl = e.target.closest('.chunk-item');
+            if (!chunkEl) return;
 
-                // Make sure chunksToPlay is populated
-                if (chunksToPlay.length === 0) {
-                    chunksToPlay = Array.from(document.querySelectorAll('.chunk-item'));
-                }
+            // Ignore clicks on interactive elements so they work normally (HTMX forms, buttons, links)
+            if (e.target.closest('button') || e.target.closest('a') || e.target.closest('form') || e.target.closest('textarea') || e.target.closest('input')) {
+                return;
+            }
 
-                if (synth.speaking) {
-                    nextOverrideIndex = index;
-                    synth.cancel(); // triggers onend/onerror
-                } else {
-                    currentChunkIndex = index;
-                    synth.cancel(); // clear queue
-                    startPlaybackFrom(index);
-                }
-            });
+            // If clicked on the summary (to open/close dropdown), don't interrupt the playback.
+            // Our onend logic will prevent it from advancing to the next chunk if it is open.
+            if (e.target.closest('summary')) {
+                return;
+            }
+
+            // Make sure chunksToPlay is populated
+            chunksToPlay = Array.from(document.querySelectorAll('.chunk-item'));
+            const index = chunksToPlay.indexOf(chunkEl);
+            if (index === -1) return;
+
+            if (synth.speaking) {
+                nextOverrideIndex = index;
+                synth.cancel(); // triggers onend/onerror
+            } else {
+                currentChunkIndex = index;
+                synth.cancel(); // clear queue
+                startPlaybackFrom(index);
+            }
         });
     }
     
@@ -228,6 +239,14 @@ document.addEventListener("DOMContentLoaded", function() {
             return;
         }
 
+        // Ensure UI is in the 'playing' state (showing Pause button)
+        btnPlay.style.display = 'none';
+        btnResume.style.display = 'none';
+        btnPause.style.display = 'inline-flex';
+        btnPause.disabled = false;
+        btnStop.disabled = false;
+        btnNext.disabled = false;
+
         const currentChunkEl = chunksToPlay[currentChunkIndex];
         const text = currentChunkEl.getAttribute('data-text');
 
@@ -249,6 +268,14 @@ document.addEventListener("DOMContentLoaded", function() {
                 currentChunkIndex = nextOverrideIndex;
                 nextOverrideIndex = null;
             } else {
+                const detailsEl = currentChunkEl.querySelector('details');
+                if (detailsEl && detailsEl.hasAttribute('open')) {
+                    // Stop auto-advancing so user can finish reading before/after details
+                    btnPause.style.display = 'none';
+                    btnResume.style.display = 'inline-flex';
+                    currentChunkIndex++; // Advance index so resuming plays the next chunk
+                    return; 
+                }
                 currentChunkIndex++;
             }
             speakCurrentChunk();
@@ -260,6 +287,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 currentChunkIndex = nextOverrideIndex;
                 nextOverrideIndex = null;
             } else {
+                const detailsEl = currentChunkEl.querySelector('details');
+                if (detailsEl && detailsEl.hasAttribute('open')) {
+                    btnPause.style.display = 'none';
+                    btnResume.style.display = 'inline-flex';
+                    currentChunkIndex++;
+                    return;
+                }
                 currentChunkIndex++;
             }
             speakCurrentChunk();
@@ -289,18 +323,19 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function pausePlayback() {
-        if (synth.speaking && !synth.paused) {
-            synth.pause();
-            btnPause.style.display = 'none';
-            btnResume.style.display = 'inline-flex';
-        }
+        synth.pause();
+        btnPlay.style.display = 'none';
+        btnPause.style.display = 'none';
+        btnResume.style.display = 'inline-flex';
     }
 
     function resumePlayback() {
+        btnPlay.style.display = 'none';
+        btnResume.style.display = 'none';
+        btnPause.style.display = 'inline-flex';
+        
         if (synth.paused) {
             synth.resume();
-            btnResume.style.display = 'none';
-            btnPause.style.display = 'inline-flex';
         } else if (!synth.speaking) {
             // Fallback if trying to resume but speech stopped entirely
             startPlaybackFrom(currentChunkIndex);
@@ -308,6 +343,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function stopPlayback() {
+        currentChunkIndex = chunksToPlay.length; // Force playback to stop in the onend handler
         synth.cancel();
         resetUI();
     }
@@ -336,6 +372,22 @@ document.addEventListener("DOMContentLoaded", function() {
     
     window.addEventListener("beforeunload", function() {
         synth.cancel();
+    });
+
+    document.addEventListener("stop-tts", function() {
+        stopPlayback();
+    });
+
+    // Fired by HX-Trigger: "manualModeForced" from process_document_htmx
+    // once the document completes processing under manual mode.
+    document.addEventListener("manualModeForced", function () {
+        const target = document.getElementById("manual-mode-toast-target");
+        if (target && !document.getElementById("manual-mode-toast")) {
+            htmx.ajax("GET", "{% url 'documents:manual-mode-toast' %}", {
+                target: "#manual-mode-toast-target",
+                swap: "innerHTML",
+            });
+        }
     });
 });
 </script>

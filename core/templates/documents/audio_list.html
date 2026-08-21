@@ -1,0 +1,102 @@
+{% extends "documents/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Audio Dashboard - OptReeda{% endblock title %}
+
+{% block dashboard_content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Audio Dashboard</h1>
+    <a href="{% url 'documents:document-upload' %}" class="bg-brand hover:bg-brandHover text-white font-bold py-2 px-4 rounded transition focus:outline-none focus:ring-2 focus:ring-brandHover">
+      New Document
+    </a>
+  </div>
+
+  {% if documents %}
+    <div class="space-y-8">
+      {% for document in documents %}
+      <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+          <h2 class="text-lg font-bold text-gray-800">{{ document.title }}</h2>
+          <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded border border-gray-200">
+            {{ document.get_domain_type_display }}
+          </span>
+        </div>
+        
+        <div class="p-6">
+          <ul class="space-y-4">
+            {% for chunk in document.chunks.all %}
+              {% if chunk.audio_recording and chunk.audio_recording.audio_file %}
+              <li class="bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition shadow-sm">
+                <details class="group/details">
+                  <summary class="cursor-pointer p-4 flex items-center justify-between transition outline-none focus:ring-2 focus:ring-brand rounded-lg relative z-10 bg-white">
+                    <div class="flex-1 flex items-start">
+                      <div class="mt-0.5 mr-3 transform transition duration-200 group-open/details:rotate-90 shrink-0 text-gray-400 group-hover/details:text-gray-600">
+                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                      </div>
+                      <div>
+                        <h3 class="font-bold text-gray-800 text-sm">
+                          {% if chunk.title %}
+                            {{ chunk.title }} (Chunk {{ chunk.chunk_index }})
+                          {% else %}
+                            Chunk {{ chunk.chunk_index }}
+                          {% endif %}
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-1 line-clamp-1 pr-4 uppercase tracking-wider">
+                          {{ chunk.optimized_text|default:chunk.raw_text|truncatechars:50 }}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div class="ml-4 flex items-center space-x-2 shrink-0">
+                      <select class="audio-speed-selector text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm" title="Playback Speed" onclick="event.stopPropagation();">
+                        <option value="0.5">0.5x</option>
+                        <option value="0.75">0.75x</option>
+                        <option value="1.0" selected>1.0x</option>
+                        <option value="1.25">1.25x</option>
+                        <option value="1.5">1.5x</option>
+                        <option value="2.0">2.0x</option>
+                      </select>
+                      <button type="button" class="chunk-audio-play-btn whitespace-nowrap text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded transition focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center shadow-sm border border-blue-200" data-audio-url="{{ chunk.audio_recording.audio_file.url }}" data-audio-speed="{{ request.user.audio_speed_pref }}" onclick="event.preventDefault();">
+                        <svg class="w-4 h-4 mr-1 play-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"></path></svg>
+                        <svg class="w-4 h-4 mr-1 hidden stop-playback-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4h12v12H4z"></path></svg>
+                        <span class="btn-text">Play</span>
+                      </button>
+                    </div>
+                  </summary>
+
+                  <div class="-mt-2 relative z-0 p-4 pt-6 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-gray-50 rounded-b-lg">
+                      <div class="bg-white p-4 rounded-md border border-gray-200 shadow-sm">
+                          <h6 class="font-bold text-gray-700 mb-2 border-b border-gray-100 pb-2 flex items-center">
+                              <svg class="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                              Before (Raw Text)
+                          </h6>
+                          <p class="text-gray-600 font-mono text-xs whitespace-pre-wrap leading-relaxed">{{ chunk.raw_text }}</p>
+                      </div>
+                      {% include "documents/partials/chunk_optimized_display.html" with chunk=chunk has_edit_feature=has_edit_feature hide_play_btn=True %}
+                  </div>
+                </details>
+              </li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-center py-16 bg-white rounded-lg border border-gray-200 border-dashed">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+      </svg>
+      <h3 class="mt-2 text-sm font-semibold text-gray-900">No audio recordings</h3>
+      <p class="mt-1 text-sm text-gray-500">You haven't generated any audio from your documents yet.</p>
+      <div class="mt-6">
+        <a href="{% url 'documents:document-list' %}" class="inline-flex items-center rounded-md bg-brand px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brandHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+          Go to Library
+        </a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock dashboard_content %}

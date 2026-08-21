@@ -1,6 +1,7 @@
 import io
 import os
 import re
+import time
 from typing import Any
 from typing import BinaryIO
 import docx
@@ -80,6 +81,20 @@ class BaseCleanerService:
     CITATION_ET_AL_PATTERN = re.compile(r"\(([A-Z][a-zA-Z]+)\s+et\s+al\.\,?\s*\d{4}\)")
     CITATION_SINGLE_PATTERN = re.compile(r"\(([A-Z][a-zA-Z]+)\,?\s*\d{4}\)")
     EXCESS_DOTS_PATTERN = re.compile(r"\.{3,}")
+    # Matches a written-out number word immediately followed by its bracketed digit
+    # equivalent, e.g. "three [3]" or "twenty-one [21]".  The bracket is redundant
+    # for TTS because the word already conveys the value.
+    REDUNDANT_BRACKET_NUMBER_PATTERN = re.compile(
+        r"\b"
+        r"(zero|one|two|three|four|five|six|seven|eight|nine|ten|"
+        r"eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|"
+        r"eighteen|nineteen|twenty|twenty-one|twenty-two|twenty-three|"
+        r"twenty-four|twenty-five|twenty-six|twenty-seven|twenty-eight|"
+        r"twenty-nine|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
+        r"hundred|thousand|million)"
+        r"\b\s*\[\d+\]",
+        re.IGNORECASE,
+    )
 
     @classmethod
     def clean_formatting(cls, text: str) -> str:
@@ -100,6 +115,8 @@ class BaseCleanerService:
         cleaned = cls.EXCESS_DOTS_PATTERN.sub(".", cleaned)
         # Replace URLs with spoken reference
         cleaned = cls.URL_PATTERN.sub("Link to referenced resource.", cleaned)
+        # Remove bracketed digit when the word form already precedes it (e.g. "three [3]" → "three")
+        cleaned = cls.REDUNDANT_BRACKET_NUMBER_PATTERN.sub(r"\1", cleaned)
         # Transform citations
         cleaned = cls.CITATION_ET_AL_PATTERN.sub(r"\1 and colleagues", cleaned)
         cleaned = cls.CITATION_SINGLE_PATTERN.sub(r"\1", cleaned)
@@ -148,8 +165,12 @@ class LLMOptimizerService:
         """
         Optimize a text chunk using an LLM based on its domain.
         Expand abbreviations, convert math formulas, and apply domain-specific formatting.
+        Retries up to LLM_MAX_RETRIES times on failure before falling back to
+        ManualOptimizerService.
         """
         model = getattr(settings, "LLM_MODEL", "gpt-4o-mini")
+        timeout = getattr(settings, "LLM_TIMEOUT", 15)
+        max_retries = getattr(settings, "LLM_MAX_RETRIES", 2)
 
         system_prompt = (
             "You are an expert text-to-speech optimizer. "
@@ -186,15 +207,21 @@ class LLMOptimizerService:
             {"role": "user", "content": text},
         ]
 
-        try:
-            timeout = getattr(settings, "LLM_TIMEOUT", 15)
-            response: Any = completion(model=model, messages=messages, timeout=timeout)
-            msg = getattr(response.choices[0], "message", None)
-            content = getattr(msg, "content", "")
-            return str(content).strip() if content else text
-        except Exception:  # noqa: BLE001
-            # fallback if LLM fails (e.g. during offline unit tests)
-            return ManualOptimizerService.optimize_chunk(text, domain, code_mode)
+        last_exc: Exception | None = None
+        for attempt in range(1, max_retries + 1):
+            try:
+                response: Any = completion(model=model, messages=messages, timeout=timeout)
+                msg = getattr(response.choices[0], "message", None)
+                content = getattr(msg, "content", "")
+                return str(content).strip() if content else text
+            except Exception as exc:  # noqa: BLE001
+                last_exc = exc
+                if attempt < max_retries:
+                    # Exponential backoff: 1s, 2s, 4s …
+                    time.sleep(2 ** (attempt - 1))
+
+        # All retries exhausted — fall back to offline optimizer
+        return ManualOptimizerService.optimize_chunk(text, domain, code_mode)
 
 
 class ManualOptimizerService:

@@ -17,8 +17,8 @@ class DocumentForm(forms.ModelForm):
     def clean_file(self):
         file = self.cleaned_data.get("file")
         if file:
-            # If user is anonymous, restrict file size to 1MB
+            # If user is anonymous, restrict file size to 2MB
             if not self.request or not self.request.user.is_authenticated:
-                if file.size > 1 * 1024 * 1024:
-                    raise ValidationError("Anonymous users can only upload files up to 1MB in size. Please log in to upload larger files.")
+                if file.size > 2 * 1024 * 1024:
+                    raise ValidationError("Oops, this file is a bit too big! Guests can upload up to 2MB. Please log in to process larger documents.")
         return file

@@ -7,6 +7,7 @@ else:
 
     ForeignKey = auto_prefetch.ForeignKey
 
+from django.conf import settings
 from django.db import models
 from django.db.models import CharField
 from django.db.models import FileField
@@ -15,7 +16,8 @@ from django.db.models import PositiveIntegerField
 from django.db.models import TextField
 from django.utils.translation import gettext_lazy as _
 
-from django.conf import settings
+from core.applications.documents.querysets import DocumentChunkManager
+from core.applications.documents.querysets import DocumentManager
 from core.helpers.enums import CodeMode
 from core.helpers.enums import DomainType
 from core.helpers.enums import OptimizationMode
@@ -24,20 +26,22 @@ from core.helpers.models import TimeBasedModel
 
 
 class Document(TimeBasedModel):  # type: ignore[django-manager-missing]
+    objects = DocumentManager()
+
     if TYPE_CHECKING:
-        chunks: models.Manager[DocumentChunk]
+        chunks: models.Manager["DocumentChunk"]
 
     DomainType = DomainType
     Status = Status
     CodeMode = CodeMode
     OptimizationMode = OptimizationMode
-    
+
     user = ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="documents"
+        related_name="documents",
     )
 
     title = CharField(max_length=255)
@@ -86,7 +90,9 @@ class Document(TimeBasedModel):  # type: ignore[django-manager-missing]
         return f"{self.title} ({self.get_domain_type_display()})"
 
 
-class DocumentChunk(TimeBasedModel):
+class DocumentChunk(TimeBasedModel):  # type: ignore[django-manager-missing]
+    objects = DocumentChunkManager()
+
     document = ForeignKey(
         Document,
         on_delete=models.CASCADE,
@@ -105,3 +111,19 @@ class DocumentChunk(TimeBasedModel):
 
     def __str__(self) -> str:
         return f"{self.document.title} - Chunk {self.chunk_index}"
+
+
+class ChunkAudioRecording(TimeBasedModel):
+    chunk = models.OneToOneField(
+        DocumentChunk,
+        on_delete=models.CASCADE,
+        related_name="audio_recording",
+    )
+    audio_file = models.FileField(upload_to="audio_chunks/")
+
+    class Meta(TimeBasedModel.Meta):
+        verbose_name = _("Chunk Audio Recording")
+        verbose_name_plural = _("Chunk Audio Recordings")
+
+    def __str__(self) -> str:
+        return f"Audio for {self.chunk}"

@@ -64,3 +64,14 @@ The Documents API uses Django REST Framework (DRF) and is fully documented via `
 * **POST /api/documents/{id}/process/**: Triggers document optimization. Enforces ``OptimizationMode.MANUAL`` if the user is on a 'Free' plan.
 * **GET /api/documents/{id}/**: Retrieves the processing status and finalized optimized text of a specific document.
 * **GET /api/documents/{id}/chunks/**: Retrieves the pagination chunks associated with a completed document.
+
+Views and UI (HTMX)
+-------------------
+
+The web interface uses Django's generic class-based views (CBVs) combined with **HTMX** for dynamic, SPA-like interactions without full page reloads.
+
+* **Standard Views**: Generic CBVs like `DocumentListView`, `DocumentDetailView`, `DocumentCreateView`, and `DocumentDeleteView` are used for standard page rendering and form handling.
+* **HTMX Views**: Certain interactive elements are handled by specialized CBVs that return HTML partials rather than full page templates:
+  * `ProcessDocumentHTMXView` (inherits `DetailView`): Handles document processing initiation and returns an updated list of document chunks.
+  * `EditChunkHTMXView` (inherits `DetailView`): Handles both the display of a chunk's edit form and the inline POST submission of the optimized text.
+  * `RecordChunkAudioHTMXView` (inherits `DetailView`): Handles asynchronous audio file uploads for specific chunks.

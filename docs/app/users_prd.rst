@@ -53,3 +53,9 @@ The Users API exposes profile and authentication endpoints.
 * **GET /api/users/me/**: Retrieves the current authenticated user's profile information.
 * **PATCH /api/users/me/**: Allows updating the user's ``name`` and other profile fields.
 * **Authentication**: Handled primarily via standard token or session auth integrations configured at the project level, utilizing ``django-allauth`` underneath.
+
+Views and API Design
+--------------------
+Following the project's architectural guidelines, the Users Application strictly uses class-based abstractions:
+* **Web Views**: Generic CBVs like `UserDetailView`, `UserUpdateView`, and `UserRedirectView` are utilized for all user profile rendering and forms.
+* **API Endpoints**: Uses class-based abstractions like `VerifyEmailConfirmView` (inheriting from `APIView`) for standalone RPC-like verification steps that lack CRUD semantics, adhering to standard DRF patterns.

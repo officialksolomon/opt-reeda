@@ -115,7 +115,7 @@ AUTHENTICATION_BACKENDS = [
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
 AUTH_USER_MODEL = "users.User"
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-redirect-url
-LOGIN_REDIRECT_URL = "users:redirect"
+LOGIN_REDIRECT_URL = "documents:document-list"
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-url
 LOGIN_URL = "account_login"
 
@@ -294,6 +294,15 @@ SOCIALACCOUNT_FORMS = {"signup": "core.applications.users.forms.UserSocialSignup
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+# LLM (litellm) settings
+# LLM_MODEL accepts any litellm-compatible model string, e.g.:
+#   "gpt-4o-mini", "gemini/gemini-pro", "anthropic/claude-3-haiku"
+# The corresponding API key must be set as an env var that litellm reads
+# automatically (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.).
+LLM_MODEL = env("LLM_MODEL", default="gemini/gemini-2.0-flash-lite")
+LLM_TIMEOUT = env.int("LLM_TIMEOUT", default=15)
+# Number of times to retry a failed LLM call before falling back to ManualOptimizer.
+LLM_MAX_RETRIES = env.int("LLM_MAX_RETRIES", default=2)
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": (

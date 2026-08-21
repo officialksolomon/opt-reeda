@@ -1,57 +1,42 @@
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
+from django.views.generic import DeleteView
 from django.views.generic import DetailView
 from django.views.generic import ListView
-from django.views.generic import DeleteView
-from django.http import HttpResponse
 
 from core.applications.documents.forms import DocumentForm
 from core.applications.documents.models import Document
+from core.applications.documents.models import DocumentChunk
 from core.applications.documents.services import PipelineService
+from core.applications.pricing.querysets import user_has_feature
+from core.helpers.enums import OptimizationMode
 
-
-from django.contrib.auth.mixins import LoginRequiredMixin
 
 class DocumentFilterMixin:
-    def get_filtered_queryset(self, base_queryset):
-        queryset = base_queryset
-        
-        q = self.request.GET.get('q', '').strip()
-        status = self.request.GET.get('status')
-        domain_type = self.request.GET.get('domain_type')
-        sort = self.request.GET.get('sort')
+    """Mixin that applies search, filter, and sort params from the request to a queryset."""
 
-        if q:
-            queryset = queryset.filter(title__icontains=q)
-        if status:
-            queryset = queryset.filter(status=status)
-        if domain_type:
-            queryset = queryset.filter(domain_type=domain_type)
-            
-        if sort == 'oldest':
-            queryset = queryset.order_by("created_at")
-        elif sort == 'title_asc':
-            queryset = queryset.order_by("title")
-        elif sort == 'title_desc':
-            queryset = queryset.order_by("-title")
-        elif sort == 'status':
-            queryset = queryset.order_by("status", "-created_at")
-        else:
-            queryset = queryset.order_by("-created_at") # default newest
-            
-        return queryset
+    def get_filtered_queryset(self, base_queryset):
+        return base_queryset.apply_filters(
+            q=self.request.GET.get("q", "").strip(),
+            status=self.request.GET.get("status", ""),
+            domain_type=self.request.GET.get("domain_type", ""),
+            sort=self.request.GET.get("sort", ""),
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from core.applications.documents.models import Document
-        context['status_choices'] = Document.Status.choices
-        context['domain_choices'] = Document.DomainType.choices
-        context['current_q'] = self.request.GET.get('q', '')
-        context['current_status'] = self.request.GET.get('status', '')
-        context['current_domain_type'] = self.request.GET.get('domain_type', '')
-        context['current_sort'] = self.request.GET.get('sort', '')
+        context["status_choices"] = Document.Status.choices
+        context["domain_choices"] = Document.DomainType.choices
+        context["current_q"] = self.request.GET.get("q", "")
+        context["current_status"] = self.request.GET.get("status", "")
+        context["current_domain_type"] = self.request.GET.get("domain_type", "")
+        context["current_sort"] = self.request.GET.get("sort", "")
         return context
 
 
@@ -61,12 +46,13 @@ class DocumentListView(LoginRequiredMixin, DocumentFilterMixin, ListView):
     context_object_name = "documents"
 
     def get_queryset(self):
-        qs = Document.objects.filter(user=self.request.user)
+        qs = Document.objects.for_user(self.request.user)
         qs = self.get_filtered_queryset(qs)
-        # If user is actively searching/filtering, maybe show all?
-        # The prompt says "implement search, filter and sorting on dashboard".
-        # If they apply a filter, let's not limit to 6, otherwise they can't find what they searched for.
-        has_filters = any(self.request.GET.get(k) for k in ['q', 'status', 'domain_type', 'sort'])
+        # When no filters are active, cap the dashboard at 6 documents.
+        # When the user is actively searching or filtering, show all results.
+        has_filters = any(
+            self.request.GET.get(k) for k in ["q", "status", "domain_type", "sort"]
+        )
         if not has_filters:
             return qs[:6]
         return qs
@@ -78,24 +64,22 @@ class DocumentTableView(LoginRequiredMixin, DocumentFilterMixin, ListView):
     context_object_name = "documents"
 
     def get_queryset(self):
-        qs = Document.objects.filter(user=self.request.user)
+        qs = Document.objects.for_user(self.request.user)
         return self.get_filtered_queryset(qs)
 
-
-from django.http import HttpResponseRedirect
 
 class DocumentDeleteView(LoginRequiredMixin, DeleteView):
     model = Document
     success_url = reverse_lazy("documents:document-table")
 
     def get_queryset(self):
-        # Ensure a user can only delete their own documents
-        return super().get_queryset().filter(user=self.request.user)
+        # Users may only delete their own documents.
+        return super().get_queryset().for_user(self.request.user)
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         self.object.delete()
-        if request.headers.get('HX-Request') or request.META.get('HTTP_HX_REQUEST'):
+        if request.headers.get("HX-Request") or request.META.get("HTTP_HX_REQUEST"):
             return HttpResponse("")
         return HttpResponseRedirect(self.get_success_url())
 
@@ -108,24 +92,27 @@ class DocumentCreateView(CreateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['request'] = self.request
+        kwargs["request"] = self.request
         return kwargs
 
     def get_success_url(self):
         if not self.request.user.is_authenticated:
-            from django.urls import reverse
-            return reverse("account_login") + f"?next={reverse('documents:document-detail', kwargs={'pk': self.object.pk})}"
+            from django.urls import reverse  # noqa: PLC0415
+
+            return (
+                reverse("account_login")
+                + f"?next={reverse('documents:document-detail', kwargs={'pk': self.object.pk})}"
+            )
         return super().get_success_url()
 
     def form_valid(self, form):
         if self.request.user.is_authenticated:
             form.instance.user = self.request.user
         else:
-            from core.helpers.enums import OptimizationMode
             form.instance.optimization_mode = OptimizationMode.MANUAL
-            
+
         response = super().form_valid(form)
-        # Only process immediately if the user is authenticated
+        # Only run the pipeline immediately for authenticated users.
         if self.request.user.is_authenticated:
             PipelineService.process_document(self.object)
         return response
@@ -138,16 +125,121 @@ class DocumentDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Prefetch chunks so we can render them in the template
-        context["chunks"] = self.object.chunks.all().order_by("chunk_index")
+        context["chunks"] = self.object.chunks.ordered()
+        context["has_edit_feature"] = user_has_feature(
+            self.request.user, "edit_optimized_text"
+        )
         return context
+
 
 def process_document_htmx(request, pk):
     document = get_object_or_404(Document, pk=pk)
-    
-    # Process only if pending and user is authenticated (or just if pending, since unauthenticated shouldn't be here)
-    if document.status == Document.Status.PENDING and request.user.is_authenticated:
+
+    # Determine whether this user lacks the LLM feature before processing.
+    manual_mode_forced = not user_has_feature(request.user, "llm_optimization")
+
+    if (
+        document.status == Document.Status.PENDING
+        and request.user.is_authenticated
+    ):
         PipelineService.process_document(document)
-        
-    chunks = document.chunks.all().order_by("chunk_index")
-    return render(request, "documents/partials/chunk_list.html", {"document": document, "chunks": chunks})
+
+    chunks = document.chunks.ordered()
+    has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
+    response = render(
+        request,
+        "documents/partials/chunk_list.html",
+        {
+            "document": document,
+            "chunks": chunks,
+            "has_edit_feature": has_edit_feature,
+            "manual_mode_forced": manual_mode_forced,
+        },
+    )
+    # When manual mode was forced, fire a client-side event that the page
+    # JavaScript listens for to show the upgrade toast.
+    if manual_mode_forced and document.status == Document.Status.COMPLETED:
+        response["HX-Trigger"] = "manualModeForced"
+    return response
+
+
+@login_required
+def edit_chunk_htmx(request, pk):
+    chunk = get_object_or_404(DocumentChunk, pk=pk, document__user=request.user)
+    has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
+
+    if request.method == "POST":
+        if has_edit_feature:
+            new_text = request.POST.get("optimized_text", "").strip()
+            if new_text:
+                chunk.optimized_text = new_text
+                chunk.save()
+        return render(
+            request,
+            "documents/partials/chunk_optimized_display.html",
+            {"chunk": chunk, "has_edit_feature": has_edit_feature},
+        )
+
+    if has_edit_feature:
+        return render(
+            request,
+            "documents/partials/chunk_edit_form.html",
+            {"chunk": chunk},
+        )
+    return render(
+        request,
+        "documents/partials/chunk_optimized_display.html",
+        {"chunk": chunk, "has_edit_feature": has_edit_feature},
+    )
+
+
+@login_required
+def record_chunk_audio_htmx(request, pk):
+    from core.applications.documents.models import ChunkAudioRecording  # noqa: PLC0415
+
+    chunk = get_object_or_404(DocumentChunk, pk=pk, document__user=request.user)
+    has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
+
+    if request.method == "POST":
+        from core.applications.documents.tts import get_tts_provider  # noqa: PLC0415
+
+        provider = get_tts_provider()
+        audio_content = provider.generate_audio(chunk.optimized_text)
+        audio_content.name = (
+            f"document_{chunk.document.pk}_chunk_{chunk.chunk_index}.mp3"
+        )
+
+        recording, _created = ChunkAudioRecording.objects.get_or_create(chunk=chunk)
+        recording.audio_file.save(audio_content.name, audio_content, save=True)
+        chunk.refresh_from_db()
+
+    return render(
+        request,
+        "documents/partials/chunk_optimized_display.html",
+        {"chunk": chunk, "has_edit_feature": has_edit_feature},
+    )
+
+
+class AudioListView(LoginRequiredMixin, ListView):
+    model = Document
+    template_name = "documents/audio_list.html"
+    context_object_name = "documents"
+
+    def get_queryset(self):
+        return Document.objects.for_user(self.request.user).with_audio()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["has_edit_feature"] = user_has_feature(
+            self.request.user, "edit_optimized_text"
+        )
+        return context
+
+
+def manual_mode_toast_view(request):
+    """
+    Renders the manual-mode upgrade toast partial.
+    Called via htmx.ajax() when the server fires the `manualModeForced`
+    HX-Trigger after completing document processing in offline mode.
+    """
+    return render(request, "documents/partials/manual_mode_toast.html")

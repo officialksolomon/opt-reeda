@@ -26,3 +26,9 @@ API Summary
 The `pricing` API is fully documented using drf-spectacular.
 - ``/api/plans/``: List, retrieve, and manage plans.
 - ``/api/subscriptions/``: Manage active subscriptions.
+
+Views and API Design
+--------------------
+Following the project's architectural guidelines, the Pricing Application exclusively uses the highest appropriate class-based abstractions:
+- **API Endpoints**: Utilize Django REST Framework's `ModelViewSet` (`PlanViewSet`, `SubscriptionViewSet`) to handle CRUD semantics efficiently.
+- **Web Views**: Template-rendering views, such as `PricingView`, inherit from Django's generic `TemplateView`.

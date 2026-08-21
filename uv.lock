@@ -1001,6 +1001,19 @@ wheels = [
 ]
 
 [[package]]
+name = "gtts"
+version = "2.2.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "requests" },
+    { name = "six" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4d/5e/a658e997640281736e39f0f1767e662dcda4547e9908fb20e92918df9f87/gTTS-2.2.4-py3-none-any.whl", hash = "sha256:60f6a611ea858badcceb328544b28435b663e39898859beeb9adb2a874bc1eca", size = 26064, upload-time = "2022-03-15T05:32:41.32Z" },
+]
+
+[[package]]
 name = "gunicorn"
 version = "26.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1570,6 +1583,7 @@ dependencies = [
     { name = "djangorestframework" },
     { name = "djangorestframework-simplejwt" },
     { name = "drf-spectacular" },
+    { name = "gtts" },
     { name = "gunicorn" },
     { name = "hiredis" },
     { name = "litellm" },
@@ -1623,6 +1637,7 @@ requires-dist = [
     { name = "djangorestframework", specifier = ">=3.17.1" },
     { name = "djangorestframework-simplejwt", specifier = ">=5.5.1" },
     { name = "drf-spectacular", specifier = ">=0.30.0" },
+    { name = "gtts", specifier = ">=2.2.4" },
     { name = "gunicorn", specifier = "==26.0.0" },
     { name = "hiredis", specifier = "==3.4.0" },
     { name = "litellm" },

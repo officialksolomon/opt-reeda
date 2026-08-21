@@ -15,6 +15,12 @@ class Status(models.TextChoices):
     FAILED = "failed", _("Failed")
 
 
+class SubscriptionStatus(models.TextChoices):
+    ACTIVE = "active", _("Active")
+    CANCELED = "canceled", _("Canceled")
+    PAST_DUE = "past_due", _("Past Due")
+
+
 class CodeMode(models.TextChoices):
     SKIP = "skip", _("Skip Code")
     SUMMARIZE = "summarize", _("Summarize Code")
