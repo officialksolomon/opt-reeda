@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Settings | OptReeda{% endblock title %}
+
+{% block content %}
+<div class="min-h-[calc(100vh-64px)] bg-gray-50 py-10">
+  <div class="max-w-4xl mx-auto space-y-8">
+    
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Settings</h1>
+      <p class="mt-2 text-gray-600">Manage your account settings and application preferences.</p>
+    </div>
+
+    <!-- Profile Form -->
+    <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+      <div class="px-6 py-5 border-b border-gray-200 bg-gray-50/50">
+        <h3 class="text-xl leading-6 font-semibold text-gray-900">Profile Details</h3>
+        <p class="mt-1 text-sm text-gray-500">Update your public information.</p>
+      </div>
+      <div class="px-6 py-6">
+        <form method="post" action="{% url 'users:update' %}" class="space-y-6">
+          {% csrf_token %}
+          <input type="hidden" name="update_profile" value="1">
+          
+          {% if profile_form.non_field_errors %}
+          <div class="bg-red-50 p-4 rounded-md">
+              <p class="text-sm text-red-800">{{ profile_form.non_field_errors.0 }}</p>
+          </div>
+          {% endif %}
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for field in profile_form %}
+            <div>
+                <label for="{{ field.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ field.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="flex justify-end pt-4 border-t border-gray-200">
+            <button type="submit" class="px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-brand hover:bg-brandHover transition-colors">
+              Save Profile
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Preferences Form -->
+    <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+      <div class="px-6 py-5 border-b border-gray-200 bg-gray-50/50">
+        <h3 class="text-xl leading-6 font-semibold text-gray-900">Application Preferences</h3>
+        <p class="mt-1 text-sm text-gray-500">Customize how OptReeda looks, sounds, and behaves.</p>
+      </div>
+      <div class="px-6 py-6">
+        <form method="post" action="{% url 'users:update' %}" class="space-y-8">
+          {% csrf_token %}
+          <input type="hidden" name="update_settings" value="1">
+          
+          {% if settings_form.non_field_errors %}
+          <div class="bg-red-50 p-4 rounded-md">
+              <p class="text-sm text-red-800">{{ settings_form.non_field_errors.0 }}</p>
+          </div>
+          {% endif %}
+
+          <!-- Audio & Playback -->
+          <div>
+            <h4 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">Audio & Playback</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">{{ settings_form.audio_speed.label }}</label>
+                {{ settings_form.audio_speed }}
+                <p class="mt-1 text-xs text-gray-500">Default playback speed for generated audio.</p>
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">{{ settings_form.default_voice.label }}</label>
+                {{ settings_form.default_voice }}
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">{{ settings_form.voice_pitch.label }}</label>
+                {{ settings_form.voice_pitch }}
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">{{ settings_form.voice_volume.label }}</label>
+                {{ settings_form.voice_volume }}
+              </div>
+              <div class="flex items-center space-x-3 mt-4 md:col-span-2">
+                {{ settings_form.auto_play }}
+                <label class="text-sm font-bold text-gray-700">{{ settings_form.auto_play.label }}</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- UI & Accessibility -->
+          <div>
+            <h4 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">UI & Accessibility</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">{{ settings_form.theme_preference.label }}</label>
+                {{ settings_form.theme_preference }}
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">{{ settings_form.visual_highlight_style.label }}</label>
+                {{ settings_form.visual_highlight_style }}
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">{{ settings_form.font_size.label }}</label>
+                {{ settings_form.font_size }}
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">{{ settings_form.font_family.label }}</label>
+                {{ settings_form.font_family }}
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">{{ settings_form.layout_density.label }}</label>
+                {{ settings_form.layout_density }}
+              </div>
+              <div class="flex items-center space-x-3 mt-8">
+                {{ settings_form.reduce_motion }}
+                <label class="text-sm font-bold text-gray-700">{{ settings_form.reduce_motion.label }}</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notifications & Processing -->
+          <div>
+            <h4 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">Notifications & Processing</h4>
+            <div class="space-y-4">
+              <div class="flex items-center space-x-3">
+                {{ settings_form.email_notifications }}
+                <label class="text-sm font-bold text-gray-700">{{ settings_form.email_notifications.label }}</label>
+              </div>
+              <p class="mt-1 text-xs text-gray-500 ml-7">Receive an email when long background tasks (like generation) complete.</p>
+              
+              <div class="pt-4 max-w-sm">
+                <label class="block text-sm font-bold text-gray-700 mb-1">{{ settings_form.chunk_size.label }}</label>
+                {{ settings_form.chunk_size }}
+                <p class="mt-1 text-xs text-gray-500">Max size per chunk. Smaller chunks process faster.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-4 border-t border-gray-200">
+            <button type="submit" class="px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-brand hover:bg-brandHover transition-colors">
+              Save Preferences
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-red-200">
+      <div class="px-6 py-5 border-b border-gray-200 bg-red-50">
+        <h3 class="text-xl leading-6 font-semibold text-red-800">Danger Zone</h3>
+      </div>
+      <div class="px-6 py-6 space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h4 class="text-sm font-bold text-gray-900">Export Data</h4>
+                <p class="text-xs text-gray-500">Download all your documents and audio files as a ZIP archive.</p>
+            </div>
+            <button class="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Request Export</button>
+        </div>
+        <hr class="border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <h4 class="text-sm font-bold text-gray-900">Delete Account</h4>
+                <p class="text-xs text-gray-500">Permanently remove your account and all associated data.</p>
+            </div>
+            <button class="px-4 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100">Delete Account</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock content %}

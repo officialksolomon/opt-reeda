@@ -25,23 +25,54 @@ class UserDetailView(LoginRequiredMixin, DetailView):
 user_detail_view = UserDetailView.as_view()
 
 
-from core.applications.users.forms import UserUpdateForm
+from core.applications.users.forms import UserProfileForm, UserSettingsForm
+from core.applications.users.models import UserSettings
+from django.views.generic import TemplateView
+from django.shortcuts import redirect
+from django.contrib import messages
 
-class UserUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = User
-    form_class = UserUpdateForm
-    success_message = _("Information successfully updated")
+class SettingsView(LoginRequiredMixin, TemplateView):
+    template_name = "users/settings.html"
 
-    def get_success_url(self) -> str:
-        assert self.request.user.is_authenticated  # type guard
-        return self.request.user.get_absolute_url()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        settings_obj, _ = UserSettings.objects.get_or_create(user=user)
+        
+        if 'profile_form' not in context:
+            context['profile_form'] = UserProfileForm(instance=user)
+        if 'settings_form' not in context:
+            context['settings_form'] = UserSettingsForm(instance=settings_obj)
+            
+        return context
 
-    def get_object(self, queryset: QuerySet | None = None) -> User:
-        assert self.request.user.is_authenticated  # type guard
-        return self.request.user
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        settings_obj, _ = UserSettings.objects.get_or_create(user=user)
+        
+        profile_form = UserProfileForm(instance=user)
+        settings_form = UserSettingsForm(instance=settings_obj)
+
+        if 'update_profile' in request.POST:
+            profile_form = UserProfileForm(request.POST, instance=user)
+            if profile_form.is_valid():
+                profile_form.save()
+                messages.success(request, _("Profile updated successfully."))
+                return redirect("users:update")
+        elif 'update_settings' in request.POST:
+            settings_form = UserSettingsForm(request.POST, instance=settings_obj)
+            if settings_form.is_valid():
+                settings_form.save()
+                messages.success(request, _("Settings updated successfully."))
+                return redirect("users:update")
+
+        return self.render_to_response(self.get_context_data(
+            profile_form=profile_form,
+            settings_form=settings_form
+        ))
 
 
-user_update_view = UserUpdateView.as_view()
+user_update_view = SettingsView.as_view()
 
 
 class UserRedirectView(LoginRequiredMixin, RedirectView):

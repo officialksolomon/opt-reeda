@@ -606,18 +606,43 @@ class PipelineService:
         paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
         chunks = []
         words_per_minute = 150
+        
+        user_chunk_size = 250
+        try:
+            if document.user and hasattr(document.user, 'settings'):
+                user_chunk_size = int(document.user.settings.chunk_size)
+        except (ValueError, AttributeError):
+            pass
 
-        for i, para in enumerate(paragraphs):
-            word_count = len(para.split())
-            # Ensure each chunk takes at least 5 seconds to read
-            est_seconds = max(5, int((word_count / words_per_minute) * 60))
-            chunk = document.chunks.create(
-                chunk_index=i + 1,
-                title=f"Section {i + 1}",
-                raw_text=para,
-                optimized_text=para,
-                estimated_duration_seconds=est_seconds,
-            )
-            chunks.append(chunk)
+        chunk_index = 1
+        for para in paragraphs:
+            words = para.split()
+            
+            # If paragraph exceeds chunk size, split by words
+            if len(words) > user_chunk_size:
+                for i in range(0, len(words), user_chunk_size):
+                    sub_para = " ".join(words[i:i + user_chunk_size])
+                    sub_word_count = len(sub_para.split())
+                    est_seconds = max(5, int((sub_word_count / words_per_minute) * 60))
+                    chunk = document.chunks.create(
+                        chunk_index=chunk_index,
+                        title=f"Section {chunk_index}",
+                        raw_text=sub_para,
+                        optimized_text=sub_para,
+                        estimated_duration_seconds=est_seconds,
+                    )
+                    chunks.append(chunk)
+                    chunk_index += 1
+            else:
+                est_seconds = max(5, int((len(words) / words_per_minute) * 60))
+                chunk = document.chunks.create(
+                    chunk_index=chunk_index,
+                    title=f"Section {chunk_index}",
+                    raw_text=para,
+                    optimized_text=para,
+                    estimated_duration_seconds=est_seconds,
+                )
+                chunks.append(chunk)
+                chunk_index += 1
 
         return chunks

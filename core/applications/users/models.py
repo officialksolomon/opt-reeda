@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ObjectDoesNotExist
 from typing import TYPE_CHECKING
 from core.helpers.models import TimeBasedModel
+from core.helpers.enums import ChunkSize, TTSVoice
 
 if TYPE_CHECKING:
     from django.db.models import ForeignKey
@@ -64,6 +65,82 @@ class UserSettings(TimeBasedModel):
             (2.00, '2.0x - Extremely Fast')
         ]
     )
+    
+    # Audio & Playback
+    default_voice = CharField(
+        _("Default TTS Voice"), 
+        max_length=50, 
+        choices=TTSVoice.choices,
+        default=TTSVoice.ALLOY
+    )
+    voice_pitch = DecimalField(_("Voice Pitch"), max_digits=3, decimal_places=2, default=1.00)
+    voice_volume = DecimalField(_("Voice Volume"), max_digits=3, decimal_places=2, default=1.00)
+    auto_play = BooleanField(_("Auto-Play Audio"), default=False)
+    visual_highlight_style = CharField(
+        _("Highlight Style"), 
+        max_length=20, 
+        default="bg-yellow-200",
+        choices=[
+            ("bg-yellow-200", "Yellow Background"),
+            ("bg-brand/20", "Red Background"),
+            ("underline", "Underline"),
+            ("text-brand font-bold", "Bold Text")
+        ]
+    )
+    
+    # UI, Accessibility & Display
+    theme_preference = CharField(
+        _("App Theme"), 
+        max_length=20, 
+        default="system",
+        choices=[
+            ("light", "Light Mode"),
+            ("dark", "Dark Mode"),
+            ("system", "System Default")
+        ]
+    )
+    font_size = CharField(
+        _("Reading Font Size"), 
+        max_length=20, 
+        default="medium",
+        choices=[
+            ("text-sm", "Small"),
+            ("text-base", "Medium"),
+            ("text-lg", "Large"),
+            ("text-xl", "Extra Large")
+        ]
+    )
+    font_family = CharField(
+        _("Reading Font Family"), 
+        max_length=50, 
+        default="sans",
+        choices=[
+            ("font-sans", "Sans-Serif (Default)"),
+            ("font-serif", "Serif"),
+            ("font-mono", "Monospace (Dyslexia Friendly)")
+        ]
+    )
+    layout_density = CharField(
+        _("Layout Density"), 
+        max_length=20, 
+        default="comfortable",
+        choices=[
+            ("compact", "Compact"),
+            ("comfortable", "Comfortable")
+        ]
+    )
+    reduce_motion = BooleanField(_("Reduce Motion"), default=False)
+    
+    # Document Processing
+    chunk_size = CharField(
+        _("Document Chunk Size"),
+        max_length=10,
+        choices=ChunkSize.choices,
+        default=ChunkSize.MEDIUM,
+    )
+    
+    # Account Settings
+    email_notifications = BooleanField(_("Email Notifications"), default=True)
 
     class Meta(TimeBasedModel.Meta):
         verbose_name = _("User Settings")

@@ -8,6 +8,21 @@ class DomainType(models.TextChoices):
     AUTO_DETECT = "auto_detect", _("Auto Detect")
 
 
+class ChunkSize(models.TextChoices):
+    SMALL = "100", _("Small (~100 words)")
+    MEDIUM = "250", _("Medium (~250 words)")
+    LARGE = "500", _("Large (~500 words)")
+
+
+class TTSVoice(models.TextChoices):
+    ALLOY = "alloy", _("Alloy (Neutral)")
+    ECHO = "echo", _("Echo (Male)")
+    FABLE = "fable", _("Fable (Male, British)")
+    ONYX = "onyx", _("Onyx (Male, Deep)")
+    NOVA = "nova", _("Nova (Female)")
+    SHIMMER = "shimmer", _("Shimmer (Female)")
+
+
 class Status(models.TextChoices):
     PENDING = "pending", _("Pending")
     PROCESSING = "processing", _("Processing")

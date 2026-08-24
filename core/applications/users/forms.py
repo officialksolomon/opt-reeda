@@ -43,32 +43,27 @@ class UserSocialSignupForm(SocialSignupForm):
 from django import forms
 from .models import UserSettings
 
-class UserUpdateForm(forms.ModelForm):
-    audio_speed = forms.DecimalField(
-        label=_("Audio Playback Speed"),
-        max_digits=3, 
-        decimal_places=2,
-        required=False,
-        widget=forms.Select(choices=UserSettings.audio_speed.field.choices)
-    )
-
+class UserProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ["name"]
-
+        
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance and self.instance.pk:
-            try:
-                self.fields['audio_speed'].initial = self.instance.settings.audio_speed
-            except ObjectDoesNotExist:
-                self.fields['audio_speed'].initial = 1.00
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'block w-full appearance-none rounded-md border border-gray-300 px-4 py-3 placeholder-gray-400 shadow-sm focus:border-brand focus:outline-none focus:ring-brand sm:text-sm transition duration-200'
 
-    def save(self, commit=True):
-        user = super().save(commit=commit)
-        if 'audio_speed' in self.cleaned_data:
-            settings, _ = UserSettings.objects.get_or_create(user=user)
-            settings.audio_speed = self.cleaned_data['audio_speed']
-            if commit:
-                settings.save()
-        return user
+
+class UserSettingsForm(forms.ModelForm):
+    class Meta:
+        model = UserSettings
+        exclude = ["user"]
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs['class'] = 'h-4 w-4 text-brand focus:ring-brand border-gray-300 rounded'
+            else:
+                field.widget.attrs['class'] = 'block w-full appearance-none rounded-md border border-gray-300 px-4 py-3 placeholder-gray-400 shadow-sm focus:border-brand focus:outline-none focus:ring-brand sm:text-sm transition duration-200'
+
