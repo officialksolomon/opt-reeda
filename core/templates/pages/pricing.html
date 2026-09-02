@@ -131,7 +131,7 @@
           <div class="flex bg-gray-100 rounded-lg p-1 mt-4 w-max">
             {% for price in plan.prices.all %}
             <button 
-              onclick="document.querySelectorAll('.pro-price').forEach(el => el.classList.add('hidden')); document.getElementById('price-{{ price.interval }}').classList.remove('hidden'); document.querySelectorAll('.cycle-btn').forEach(el => el.classList.remove('bg-white', 'shadow-sm', 'text-gray-900')); document.querySelectorAll('.cycle-btn').forEach(el => el.classList.add('text-gray-500')); this.classList.remove('text-gray-500'); this.classList.add('bg-white', 'shadow-sm', 'text-gray-900');"
+              onclick="document.querySelectorAll('.pro-price').forEach(el => el.classList.add('hidden')); document.getElementById('price-{{ price.interval }}').classList.remove('hidden'); document.querySelectorAll('.cycle-btn').forEach(el => el.classList.remove('bg-white', 'shadow-sm', 'text-gray-900')); document.querySelectorAll('.cycle-btn').forEach(el => el.classList.add('text-gray-500')); this.classList.remove('text-gray-500'); this.classList.add('bg-white', 'shadow-sm', 'text-gray-900'); document.getElementById('selected-price-id').value='{{ price.id }}';"
               class="cycle-btn px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if forloop.first %}bg-white shadow-sm text-gray-900{% else %}text-gray-500 hover:text-gray-900{% endif %}">
               {{ price.interval|title }}ly
             </button>
@@ -167,9 +167,19 @@
           {% endfor %}
         </ul>
         
-        <a href="{% url 'account_signup' %}" class="w-full inline-block text-center bg-brand hover:bg-brandHover text-white font-bold py-4 rounded-xl shadow-lg shadow-brand/30 transition duration-200 transform hover:scale-[1.02]">
-          Upgrade to Premium
+        {% if request.user.is_authenticated %}
+        <form method="POST" action="{% url 'pricing:checkout' %}" class="w-full">
+          {% csrf_token %}
+          <input type="hidden" name="price_id" id="selected-price-id" value="{% for price in plan.prices.all %}{% if forloop.first %}{{ price.id }}{% endif %}{% endfor %}">
+          <button type="submit" class="w-full inline-block text-center bg-brand hover:bg-brandHover text-white font-bold py-4 rounded-xl shadow-lg shadow-brand/30 transition duration-200 transform hover:scale-[1.02]">
+            Upgrade to Premium
+          </button>
+        </form>
+        {% else %}
+        <a href="{% url 'account_signup' %}?next={% url 'pricing:pricing' %}" class="w-full inline-block text-center bg-brand hover:bg-brandHover text-white font-bold py-4 rounded-xl shadow-lg shadow-brand/30 transition duration-200 transform hover:scale-[1.02]">
+          Get Started
         </a>
+        {% endif %}
       </div>
       {% endif %}
       {% endfor %}

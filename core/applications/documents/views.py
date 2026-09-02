@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.urls import reverse_lazy
@@ -9,6 +10,8 @@ from django.views.generic import CreateView
 from django.views.generic import DeleteView
 from django.views.generic import DetailView
 from django.views.generic import ListView
+from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
 
 from core.applications.documents.forms import DocumentForm
 from core.applications.documents.models import Document
@@ -126,53 +129,101 @@ class DocumentDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["chunks"] = self.object.chunks.ordered()
+        
+        chunks_list = self.object.chunks.ordered()
+        paginator = Paginator(chunks_list, 20)
+        page_number = self.request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        context["chunks"] = page_obj
+        context["is_paginated"] = page_obj.has_other_pages()
+        context["page_obj"] = page_obj
+        
         context["has_edit_feature"] = user_has_feature(
             self.request.user, "edit_optimized_text"
         )
         return context
 
 
-def process_document_htmx(request, pk):
-    document = get_object_or_404(Document, pk=pk)
+@method_decorator(ratelimit(key="user_or_ip", rate="5/m", block=True), name="dispatch")
+class ProcessDocumentHTMXView(DetailView):
+    model = Document
+    template_name = "documents/partials/chunk_list.html"
+    context_object_name = "document"
 
-    # Determine whether this user lacks the LLM feature before processing.
-    manual_mode_forced = not user_has_feature(request.user, "llm_optimization")
+    def get(self, request, *args, **kwargs):
+        return self._process(request)
 
-    if (
-        document.status == Document.Status.PENDING
-        and request.user.is_authenticated
-    ):
-        PipelineService.process_document(document)
+    def post(self, request, *args, **kwargs):
+        return self._process(request)
 
-    chunks = document.chunks.ordered()
-    has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
-    response = render(
-        request,
-        "documents/partials/chunk_list.html",
-        {
-            "document": document,
-            "chunks": chunks,
-            "has_edit_feature": has_edit_feature,
-            "manual_mode_forced": manual_mode_forced,
-        },
-    )
-    # Priority order: manual_mode_forced > llm_fallback (both use offline mode
-    # but for different reasons — different toast messages).
-    if document.status == Document.Status.COMPLETED:
-        if manual_mode_forced:
-            response["HX-Trigger"] = "manualModeForced"
-        elif getattr(document, "_llm_fallback_used", False):
-            response["HX-Trigger"] = "llmFallbackUsed"
-    return response
+    def _process(self, request):
+        document = self.get_object()
+
+        # Determine whether this user lacks the LLM feature before processing.
+        manual_mode_forced = not user_has_feature(request.user, "llm_optimization")
+
+        if (
+            document.status == Document.Status.PENDING
+            and request.user.is_authenticated
+        ):
+            PipelineService.process_document(document)
+
+        chunks_list = document.chunks.ordered()
+        paginator = Paginator(chunks_list, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
+        response = render(
+            request,
+            self.template_name,
+            {
+                "document": document,
+                "chunks": page_obj,
+                "is_paginated": page_obj.has_other_pages(),
+                "page_obj": page_obj,
+                "has_edit_feature": has_edit_feature,
+                "manual_mode_forced": manual_mode_forced,
+            },
+        )
+        # Priority order: manual_mode_forced > llm_fallback (both use offline mode
+        # but for different reasons — different toast messages).
+        if document.status == Document.Status.COMPLETED:
+            if manual_mode_forced:
+                response["HX-Trigger"] = "manualModeForced"
+            elif getattr(document, "_llm_fallback_used", False):
+                response["HX-Trigger"] = "llmFallbackUsed"
+        return response
 
 
-@login_required
-def edit_chunk_htmx(request, pk):
-    chunk = get_object_or_404(DocumentChunk, pk=pk, document__user=request.user)
-    has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
+@method_decorator(ratelimit(key="user", rate="15/m", block=True), name="dispatch")
+class EditChunkHTMXView(LoginRequiredMixin, DetailView):
+    model = DocumentChunk
 
-    if request.method == "POST":
+    def get_queryset(self):
+        return super().get_queryset().filter(document__user=self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        chunk = self.get_object()
+        has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
+
+        if has_edit_feature:
+            return render(
+                request,
+                "documents/partials/chunk_edit_form.html",
+                {"chunk": chunk},
+            )
+        return render(
+            request,
+            "documents/partials/chunk_optimized_display.html",
+            {"chunk": chunk, "has_edit_feature": has_edit_feature},
+        )
+
+    def post(self, request, *args, **kwargs):
+        chunk = self.get_object()
+        has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
+
         if has_edit_feature:
             new_text = request.POST.get("optimized_text", "").strip()
             if new_text and new_text != chunk.optimized_text and new_text != chunk.raw_text:
@@ -191,28 +242,28 @@ def edit_chunk_htmx(request, pk):
             {"chunk": chunk, "has_edit_feature": has_edit_feature},
         )
 
-    if has_edit_feature:
+
+class RecordChunkAudioHTMXView(LoginRequiredMixin, DetailView):
+    model = DocumentChunk
+
+    def get_queryset(self):
+        return super().get_queryset().filter(document__user=self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        chunk = self.get_object()
+        has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
         return render(
             request,
-            "documents/partials/chunk_edit_form.html",
-            {"chunk": chunk},
+            "documents/partials/chunk_optimized_display.html",
+            {"chunk": chunk, "has_edit_feature": has_edit_feature},
         )
-    return render(
-        request,
-        "documents/partials/chunk_optimized_display.html",
-        {"chunk": chunk, "has_edit_feature": has_edit_feature},
-    )
 
-
-@login_required
-def record_chunk_audio_htmx(request, pk):
-    from core.applications.documents.models import ChunkAudioRecording  # noqa: PLC0415
-
-    chunk = get_object_or_404(DocumentChunk, pk=pk, document__user=request.user)
-    has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
-
-    if request.method == "POST":
+    def post(self, request, *args, **kwargs):
+        from core.applications.documents.models import ChunkAudioRecording  # noqa: PLC0415
         from core.applications.documents.tts import get_tts_provider  # noqa: PLC0415
+
+        chunk = self.get_object()
+        has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
 
         provider = get_tts_provider()
         audio_content = provider.generate_audio(chunk.optimized_text)
@@ -224,11 +275,11 @@ def record_chunk_audio_htmx(request, pk):
         recording.audio_file.save(audio_content.name, audio_content, save=True)
         chunk.refresh_from_db()
 
-    return render(
-        request,
-        "documents/partials/chunk_optimized_display.html",
-        {"chunk": chunk, "has_edit_feature": has_edit_feature},
-    )
+        return render(
+            request,
+            "documents/partials/chunk_optimized_display.html",
+            {"chunk": chunk, "has_edit_feature": has_edit_feature},
+        )
 
 
 class AudioListView(LoginRequiredMixin, ListView):

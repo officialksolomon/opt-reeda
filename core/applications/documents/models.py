@@ -112,6 +112,64 @@ class DocumentChunk(TimeBasedModel):  # type: ignore[django-manager-missing]
     def __str__(self) -> str:
         return f"{self.document.title} - Chunk {self.chunk_index}"
 
+    @property
+    def highlighted_optimized_text(self) -> str:
+        try:
+            import difflib
+            import re
+            from django.utils.html import escape
+            from django.utils.safestring import mark_safe
+
+            if not self.raw_text or not self.optimized_text:
+                return escape(self.optimized_text or "")
+
+            def tokenize(text: str) -> list[str]:
+                return re.findall(r'\S+|\s+', text)
+
+            raw_tokens = tokenize(self.raw_text)
+            opt_tokens = tokenize(self.optimized_text)
+
+            sm = difflib.SequenceMatcher(None, raw_tokens, opt_tokens)
+            result = []
+            for tag, i1, i2, j1, j2 in sm.get_opcodes():
+                if tag == 'equal':
+                    result.append(escape("".join(opt_tokens[j1:j2])))
+                elif tag in ('insert', 'replace'):
+                    result.append(f'<mark class="bg-green-400 text-green-900 rounded">{escape("".join(opt_tokens[j1:j2]))}</mark>')
+
+            return mark_safe("".join(result))
+        except Exception as e:
+            return f"Error: {e}"
+
+    @property
+    def highlighted_raw_text(self) -> str:
+        try:
+            import difflib
+            import re
+            from django.utils.html import escape
+            from django.utils.safestring import mark_safe
+
+            if not self.raw_text or not self.optimized_text:
+                return escape(self.raw_text or "")
+
+            def tokenize(text: str) -> list[str]:
+                return re.findall(r'\S+|\s+', text)
+
+            raw_tokens = tokenize(self.raw_text)
+            opt_tokens = tokenize(self.optimized_text)
+
+            sm = difflib.SequenceMatcher(None, raw_tokens, opt_tokens)
+            result = []
+            for tag, i1, i2, j1, j2 in sm.get_opcodes():
+                if tag == 'equal':
+                    result.append(escape("".join(raw_tokens[i1:i2])))
+                elif tag in ('delete', 'replace'):
+                    result.append(f'<del class="bg-red-200 text-red-900 rounded line-through">{escape("".join(raw_tokens[i1:i2]))}</del>')
+
+            return mark_safe("".join(result))
+        except Exception as e:
+            return f"Error: {e}"
+
 
 class ChunkAudioRecording(TimeBasedModel):
     chunk = models.OneToOneField(

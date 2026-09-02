@@ -8,7 +8,7 @@ from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView
 from drf_spectacular.views import SpectacularSwaggerView
 from core.applications.users.views import VerifyEmailConfirmView
-from core.applications.pricing.views import PricingView
+
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
@@ -17,11 +17,7 @@ urlpatterns = [
         TemplateView.as_view(template_name="pages/about.html"),
         name="about",
     ),
-    path(
-        "pricing/",
-        PricingView.as_view(),
-        name="pricing",
-    ),
+    path("pricing/", include("core.applications.pricing.urls", namespace="pricing")),
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
     # User management

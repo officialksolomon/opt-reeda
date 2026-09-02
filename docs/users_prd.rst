@@ -45,6 +45,15 @@ Models Description
    * **Omissions**: ``first_name`` and ``last_name`` are explicitly set to ``None``.
    * **Usage**: The default authentication model defined in ``settings.AUTH_USER_MODEL``.
 
+2. **UserSettings** (Inherits ``TimeBasedModel``)
+   
+   * **Attributes**: ``user`` (OneToOneField).
+   * **Audio & Playback**: ``audio_speed``, ``default_voice``, ``voice_pitch``, ``voice_volume``, ``auto_play``, ``visual_highlight_style``.
+   * **UI & Accessibility**: ``theme_preference``, ``font_size``, ``font_family``, ``layout_density``, ``reduce_motion``.
+   * **Document Processing**: ``chunk_size``.
+   * **Account Settings**: ``email_notifications``.
+   * **Usage**: Stores user-specific preferences for the application's appearance and playback behavior.
+
 API Summary
 -----------
 

@@ -7,9 +7,11 @@ The **Pricing Application** is a dedicated Django app managing the billing plans
 
 Models
 ------
-- **Plan**: Defines the available plans (e.g., Basic Listen, Pro Intelligent). Stores `features` and `limits` as JSON fields.
-- **Pricing**: Defines the price structure (amount, currency, billing cycle) linked to a specific Plan.
-- **Subscription**: Links a `User` to a specific `Plan` and `Pricing`.
+- **Plan**: Defines the available plans (e.g., Basic Listen, Pro Intelligent).
+- **Feature**: Defines an individual feature (e.g. integer, boolean) that can be linked to a plan.
+- **PlanFeature**: Links a `Plan` to a `Feature` with a specific `value` (JSON).
+- **Price**: Defines the price structure (amount, currency, billing cycle) linked to a specific Plan.
+- **Subscription**: Links a `User` to a specific `Price` (which determines the `Plan`).
 
 Flowcharts
 ----------
@@ -17,9 +19,10 @@ Flowcharts
 
     graph TD
     A[User] -->|Subscribes to| B[Subscription]
-    B -->|Linked to| C[Plan]
-    B -->|Billed via| D[Pricing]
-    C -->|Has many| D
+    B -->|Linked to| D[Price]
+    D -->|Belongs to| C[Plan]
+    C -->|Has many| E[PlanFeature]
+    E -->|Linked to| F[Feature]
 
 API Summary
 -----------

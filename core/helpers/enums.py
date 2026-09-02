@@ -36,6 +36,19 @@ class SubscriptionStatus(models.TextChoices):
     PAST_DUE = "past_due", _("Past Due")
 
 
+class TransactionStatus(models.TextChoices):
+    PENDING = "pending", _("Pending")
+    SUCCESS = "success", _("Success")
+    FAILED = "failed", _("Failed")
+
+
+class TransactionType(models.TextChoices):
+    INITIAL = "initial", _("Initial")
+    RENEWAL = "renewal", _("Renewal")
+    UPGRADE = "upgrade", _("Upgrade")
+    DOWNGRADE = "downgrade", _("Downgrade")
+
+
 class CodeMode(models.TextChoices):
     SKIP = "skip", _("Skip Code")
     SUMMARIZE = "summarize", _("Summarize Code")

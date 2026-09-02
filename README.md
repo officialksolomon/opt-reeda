@@ -17,6 +17,9 @@ Opt-Reeda is an advanced document processing API designed to optimize texts for 
 - **Chunking**: Breaks text into manageable chunks based on estimated reading time.
 - **Authentication**: Built with robust JWT-based authentication using `dj-rest-auth`.
 
+### Pending / Final Steps
+- **Gemini API Key**: We have not yet added the actual Gemini API key to make the Gemini LLM work. This is one of the final pieces of the puzzle we need to take care of before we can say this project is complete.
+
 [![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 

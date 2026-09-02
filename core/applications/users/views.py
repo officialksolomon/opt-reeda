@@ -37,7 +37,7 @@ class SettingsView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        settings_obj, _ = UserSettings.objects.get_or_create(user=user)
+        settings_obj, _created = UserSettings.objects.get_or_create(user=user)
         
         if 'profile_form' not in context:
             context['profile_form'] = UserProfileForm(instance=user)
@@ -48,7 +48,7 @@ class SettingsView(LoginRequiredMixin, TemplateView):
 
     def post(self, request, *args, **kwargs):
         user = self.request.user
-        settings_obj, _ = UserSettings.objects.get_or_create(user=user)
+        settings_obj, _created = UserSettings.objects.get_or_create(user=user)
         
         profile_form = UserProfileForm(instance=user)
         settings_form = UserSettingsForm(instance=settings_obj)

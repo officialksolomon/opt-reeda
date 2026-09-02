@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from core.applications.documents.models import Document
+from core.helpers.enums import OptimizationMode
 from core.applications.documents.models import OptimizationRegexRule
 from core.applications.documents.models import UserOptimizationExample
 from core.applications.documents.services import BaseCleanerService
@@ -158,3 +159,50 @@ class DocumentServicesTestCase(TestCase):
         )
         # Should not raise an exception, and should return original text unaffected by the bad rule.
         self.assertEqual(optimized, raw_text)
+
+    def test_pipeline_llm_fallback_mechanism(self):
+        """PipelineService falls back to ManualOptimizerService on LLMExhaustedError."""
+        doc = Document.objects.create(
+            title="Fallback Test",
+            domain_type=Document.DomainType.EDUCATIONAL,
+            raw_text="F = ma is an important formula.",
+            optimization_mode=OptimizationMode.AI
+        )
+        with patch("core.applications.documents.services.LLMOptimizerService.optimize_chunk", side_effect=LLMExhaustedError("API Down")):
+            processed = PipelineService.process_document(doc)
+            
+        self.assertEqual(processed.status, Document.Status.COMPLETED)
+        self.assertTrue(getattr(processed, "_llm_fallback_used", False))
+        # It should fall back to ManualOptimizerService, which replaces F = ma
+        self.assertIn("Force equals mass multiplied by acceleration", processed.optimized_speech_text)
+
+    def test_pipeline_chunking_logic(self):
+        """PipelineService chunks large continuous text blocks without losing data."""
+        # Create a text with 300 words, no paragraphs. Default chunk size is 250.
+        text = "word " * 300
+        doc = Document.objects.create(
+            title="Chunking Test",
+            domain_type=Document.DomainType.EDUCATIONAL,
+            raw_text=text,
+            optimization_mode=OptimizationMode.MANUAL
+        )
+        processed = PipelineService.process_document(doc)
+        
+        self.assertEqual(processed.status, Document.Status.COMPLETED)
+        self.assertEqual(processed.chunks.count(), 2)
+        
+        first_chunk = processed.chunks.first()
+        last_chunk = processed.chunks.last()
+        
+        self.assertEqual(len(first_chunk.raw_text.split()), 250)
+        self.assertEqual(len(last_chunk.raw_text.split()), 50)
+
+    def test_manual_optimizer_calculate_block(self):
+        """ManualOptimizerService correctly handles 'calculate' code blocks."""
+        raw_text = "Here is a code block:\n```python\ndef calculate(a, b):\n    return a + b\n```\nIt does math."
+        optimized = ManualOptimizerService.optimize_chunk(
+            raw_text,
+            domain=Document.DomainType.PROGRAMMING,
+            code_mode=Document.CodeMode.SUMMARIZE
+        )
+        self.assertIn("[Code snippet containing 3 lines of source code.]", optimized)

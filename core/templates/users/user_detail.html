@@ -88,7 +88,7 @@
           {% endif %}
         </div>
         <div>
-          <a href="{% url 'pricing' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-brand hover:bg-brandHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand transition-colors duration-200">
+          <a href="{% url 'pricing:pricing' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-brand hover:bg-brandHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand transition-colors duration-200">
             {% if object.subscription and object.subscription.is_active %}Upgrade Plan{% else %}View Plans{% endif %}
           </a>
         </div>

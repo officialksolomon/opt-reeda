@@ -4,7 +4,7 @@ from django.db.models import CharField, BooleanField, DecimalField, DateTimeFiel
 from django.utils.translation import gettext_lazy as _
 from typing import TYPE_CHECKING
 from core.helpers.models import TimeBasedModel
-from core.helpers.enums import SubscriptionStatus
+from core.helpers.enums import SubscriptionStatus, TransactionStatus, TransactionType
 from core.applications.pricing.querysets import PlanManager, SubscriptionManager
 
 if TYPE_CHECKING:
@@ -89,3 +89,22 @@ class Subscription(TimeBasedModel):  # type: ignore[django-manager-missing]
 
     def __str__(self) -> str:
         return f"{self.user.username} - {self.price.plan.name}"
+
+
+class Transaction(TimeBasedModel):
+    user = ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="transactions")
+    subscription = ForeignKey(Subscription, on_delete=models.CASCADE, related_name="transactions", null=True, blank=True)
+    price = ForeignKey(Price, on_delete=models.RESTRICT, related_name="transactions")
+    type = CharField(max_length=20, choices=TransactionType.choices, default=TransactionType.INITIAL)
+    base_amount = DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text=_("The original price of the new plan"))
+    prorated_discount = DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text=_("Discount applied from unused previous plan time"))
+    amount = DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text=_("The final amount charged (base_amount - prorated_discount)"))
+    reference = CharField(max_length=100, unique=True, help_text=_("Paystack transaction reference"))
+    status = CharField(max_length=20, choices=TransactionStatus.choices, default=TransactionStatus.PENDING)
+
+    class Meta(TimeBasedModel.Meta):
+        verbose_name = _("Transaction")
+        verbose_name_plural = _("Transactions")
+
+    def __str__(self) -> str:
+        return f"{self.user.username} - {self.reference} - {self.status}"

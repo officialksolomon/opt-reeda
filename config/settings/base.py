@@ -340,3 +340,8 @@ SIMPLE_JWT = {
 }
 
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
+
+# Paystack
+# ------------------------------------------------------------------------------
+PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY", default="sk_test_7f580c2a8e17503b96499b4080b114fa5b2a05f0")
+PAYSTACK_PUBLIC_KEY = env("PAYSTACK_PUBLIC_KEY", default="pk_test_f631a6f82fc70a943cb5d42927cba703ea31851f")

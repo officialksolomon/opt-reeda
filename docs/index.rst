@@ -19,9 +19,9 @@ Below you will find the table of contents detailing the core features, applicati
    :caption: Contents:
 
    app/applications
-   app/documents_prd
-   app/users_prd
-   app/pricing_prd
+   documents_prd
+   users_prd
+   pricing_prd
    howto
    users
 

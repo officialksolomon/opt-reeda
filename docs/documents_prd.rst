@@ -44,15 +44,32 @@ Models Description
 
 1. **Document** (Inherits ``TimeBasedModel``)
    
-   * **Attributes**: ``title``, ``file``, ``domain_type``, ``status``, ``code_mode``, ``optimization_mode``.
-   * **Data**: ``raw_text``, ``optimized_speech_text``, ``summary``, ``error_message``.
+   * **Attributes**: ``user``, ``title``, ``file``, ``file_type``, ``domain_type``, ``status``, ``code_mode``, ``optimization_mode``.
+   * **Data**: ``additional_instructions``, ``raw_text``, ``optimized_speech_text``, ``summary``, ``error_message``.
    * **Usage**: Used as the primary entry point for a user's upload. Uses ``auto_prefetch`` for optimized queries.
 
 2. **DocumentChunk** (Inherits ``TimeBasedModel``)
    
    * **Attributes**: ``document`` (ForeignKey), ``chunk_index``, ``estimated_duration_seconds``.
-   * **Data**: ``raw_text``, ``optimized_text``.
+   * **Data**: ``title``, ``raw_text``, ``optimized_text``.
    * **Usage**: Stores smaller pieces of the optimized document text for audio generation and playback.
+
+3. **ChunkAudioRecording** (Inherits ``TimeBasedModel``)
+   
+   * **Attributes**: ``chunk`` (OneToOneField), ``audio_file``.
+   * **Usage**: Stores the generated audio file for a specific document chunk.
+
+4. **UserOptimizationExample** (Inherits ``TimeBasedModel``)
+   
+   * **Attributes**: ``user`` (ForeignKey), ``domain_type``.
+   * **Data**: ``raw_text``, ``edited_text``.
+   * **Usage**: Stores examples of how a user manually optimized text, potentially used for few-shot learning in AI mode.
+
+5. **OptimizationRegexRule** (Inherits ``TimeBasedModel``)
+   
+   * **Attributes**: ``user`` (ForeignKey), ``domain_type``, ``is_active``.
+   * **Data**: ``pattern``, ``replacement``.
+   * **Usage**: Stores user-defined regex rules for manual text substitution.
 
 API Summary
 -----------
@@ -71,7 +88,13 @@ Views and UI (HTMX)
 The web interface uses Django's generic class-based views (CBVs) combined with **HTMX** for dynamic, SPA-like interactions without full page reloads.
 
 * **Standard Views**: Generic CBVs like `DocumentListView`, `DocumentDetailView`, `DocumentCreateView`, and `DocumentDeleteView` are used for standard page rendering and form handling.
-* **HTMX Views**: Certain interactive elements are handled by specialized CBVs that return HTML partials rather than full page templates:
-  * `ProcessDocumentHTMXView` (inherits `DetailView`): Handles document processing initiation and returns an updated list of document chunks.
-  * `EditChunkHTMXView` (inherits `DetailView`): Handles both the display of a chunk's edit form and the inline POST submission of the optimized text.
-  * `RecordChunkAudioHTMXView` (inherits `DetailView`): Handles asynchronous audio file uploads for specific chunks.
+* **HTMX Views**: Certain interactive elements are handled by specialized function-based views (FBVs) that return HTML partials rather than full page templates:
+  * `process_document_htmx`: Handles document processing initiation and returns an updated list of document chunks.
+  * `edit_chunk_htmx`: Handles both the display of a chunk's edit form and the inline POST submission of the optimized text.
+  * `record_chunk_audio_htmx`: Handles asynchronous audio file uploads for specific chunks.
+
+Pending Implementation
+--------------------
+
+* **Gemini API Key**: We have not yet added the actual Gemini API key to make the Gemini LLM work (AI Mode). This is one of the final pieces of the puzzle we need to take care of before we can say this project is complete.
+
