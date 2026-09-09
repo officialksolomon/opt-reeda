@@ -8,6 +8,7 @@ from core.applications.documents.views import DocumentDeleteView
 from core.applications.documents.views import ProcessDocumentHTMXView
 from core.applications.documents.views import EditChunkHTMXView
 from core.applications.documents.views import RecordChunkAudioHTMXView
+from core.applications.documents.views import ChunkDisplayHTMXView
 from core.applications.documents.views import manual_mode_toast_view
 from core.applications.documents.views import llm_fallback_toast_view
 
@@ -24,6 +25,7 @@ urlpatterns = [
     path("<int:pk>/delete/", DocumentDeleteView.as_view(), name="document-delete"),
     path("<int:pk>/process/", ProcessDocumentHTMXView.as_view(), name="document-process"),
     path("chunks/<int:pk>/edit/", EditChunkHTMXView.as_view(), name="chunk-edit"),
+    path("chunks/<int:pk>/display/", ChunkDisplayHTMXView.as_view(), name="chunk-display"),
     path("chunks/<int:pk>/record/", RecordChunkAudioHTMXView.as_view(), name="chunk-record"),
     path("manual-mode-toast/", manual_mode_toast_view, name="manual-mode-toast"),
     path("llm-fallback-toast/", llm_fallback_toast_view, name="llm-fallback-toast"),

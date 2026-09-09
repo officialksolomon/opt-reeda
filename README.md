@@ -16,6 +16,8 @@ Opt-Reeda is an advanced document processing API designed to optimize texts for 
   - *(Note: We are definitely going to support many more domains in the future. This is just the start!)*
 - **Chunking**: Breaks text into manageable chunks based on estimated reading time.
 - **Authentication**: Built with robust JWT-based authentication using `dj-rest-auth`.
+### Architecture Notes
+- **Background Tasks**: Heavy IO-bound tasks like LLM generation and Text-to-Speech are handled asynchronously using **Celery** with **Redis**. This decoupled architecture prevents web requests from timing out, ensures robust retry logic, and creates a highly responsive user experience.
 
 ### Pending / Final Steps
 - **Gemini API Key**: We have not yet added the actual Gemini API key to make the Gemini LLM work. This is one of the final pieces of the puzzle we need to take care of before we can say this project is complete.

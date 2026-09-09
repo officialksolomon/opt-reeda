@@ -28,6 +28,8 @@ class User(AbstractUser):
     first_name = None  # type: ignore[assignment]
     last_name = None  # type: ignore[assignment]
 
+    free_tries_used = IntegerField(default=0)
+
     @property
     def audio_speed_pref(self) -> float:
         try:

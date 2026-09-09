@@ -39,6 +39,13 @@ The application heavily relies on the ``PipelineService`` to orchestrate documen
         H --> I
         I --> J[Document Status: Completed]
 
+Background Task Abstraction
+---------------------------
+Heavy IO-bound tasks, such as LLM generation and Text-to-Speech processing, are handled asynchronously to prevent blocking the web request cycle.
+
+* **Celery + Redis**: We use Celery as a robust, distributed task queue. It runs in a separate process, meaning the web request cycle is completely unblocked regardless of the WSGI/ASGI web server threading model used. Redis serves as the message broker.
+* **@shared_task**: Document processing and TTS generation are decorated with Celery's `@shared_task`, allowing for configurable retries, timeouts, and asynchronous execution tracking.
+
 Models Description
 ------------------
 

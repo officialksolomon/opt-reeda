@@ -345,3 +345,32 @@ FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
 # ------------------------------------------------------------------------------
 PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY", default="sk_test_7f580c2a8e17503b96499b4080b114fa5b2a05f0")
 PAYSTACK_PUBLIC_KEY = env("PAYSTACK_PUBLIC_KEY", default="pk_test_f631a6f82fc70a943cb5d42927cba703ea31851f")
+
+# Celery
+# ------------------------------------------------------------------------------
+if USE_TZ:
+    # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-timezone
+    CELERY_TIMEZONE = TIME_ZONE
+# https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-broker_url
+CELERY_BROKER_URL = REDIS_URL
+# https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_backend
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND_URL", default=REDIS_URL)
+# https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-extended
+CELERY_RESULT_EXTENDED = True
+# https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-backend-always-retry
+CELERY_RESULT_BACKEND_ALWAYS_RETRY = True
+# https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-ignore-result
+CELERY_TASK_IGNORE_RESULT = True
+# https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-store-errors-even-if-ignored
+CELERY_TASK_STORE_ERRORS_EVEN_IF_IGNORED = True
+# https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-serializer
+CELERY_TASK_SERIALIZER = "json"
+# https://docs.celeryq.dev/en/stable/userguide/configuration.html#accept-content
+CELERY_ACCEPT_CONTENT = ["json"]
+# https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-time-limit
+CELERY_TASK_TIME_LIMIT = 5 * 60
+# https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-soft-time-limit
+CELERY_TASK_SOFT_TIME_LIMIT = 5 * 60
+# We explicitly set eager to False to ensure tasks are sent to Redis and run asynchronously
+CELERY_TASK_ALWAYS_EAGER = False
+

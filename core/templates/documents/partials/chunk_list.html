@@ -19,7 +19,7 @@
                                         <svg class="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                         Before (Raw Text)
                                     </h6>
-                                    <p class="text-gray-600 font-mono text-xs whitespace-pre-wrap leading-relaxed">{{ chunk.highlighted_raw_text }}</p>
+                                    <p class="text-gray-600 font-mono text-xs whitespace-pre-wrap leading-relaxed break-words">{{ chunk.highlighted_raw_text }}</p>
                                 </div>
                                 {% include "documents/partials/chunk_optimized_display.html" with chunk=chunk has_edit_feature=has_edit_feature %}
                             </div>

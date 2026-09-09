@@ -18,7 +18,8 @@ from core.applications.documents.models import Document
 from core.applications.documents.models import DocumentChunk
 from core.applications.documents.services import PipelineService
 from core.applications.documents.services import UserOptimizationExampleService
-from core.applications.pricing.querysets import user_has_feature
+from core.applications.documents.tasks import generate_chunk_audio_task
+from core.applications.pricing.querysets import user_has_feature, consume_free_try
 from core.helpers.enums import OptimizationMode
 
 
@@ -117,8 +118,12 @@ class DocumentCreateView(CreateView):
 
         response = super().form_valid(form)
         # Only run the pipeline immediately for authenticated users.
+        import time
+        print(f"[{time.time()}] About to call delay")
         if self.request.user.is_authenticated:
-            PipelineService.process_document(self.object)
+            from core.applications.documents.tasks import process_document_task
+            process_document_task.delay(self.object.id)
+        print(f"[{time.time()}] Delay called, returning response")
         return response
 
 
@@ -161,13 +166,25 @@ class ProcessDocumentHTMXView(DetailView):
         document = self.get_object()
 
         # Determine whether this user lacks the LLM feature before processing.
-        manual_mode_forced = not user_has_feature(request.user, "llm_optimization")
+        has_llm_feature = user_has_feature(request.user, "llm_optimization")
+        manual_mode_forced = not has_llm_feature
 
         if (
             document.status == Document.Status.PENDING
             and request.user.is_authenticated
         ):
-            PipelineService.process_document(document)
+            # Mark as processing so UI updates immediately
+            document.status = Document.Status.PROCESSING
+            document.save(update_fields=["status"])
+            
+            # Consume a try if they used AI optimization and aren't subscribed
+            if document.optimization_mode == "ai" and not manual_mode_forced:
+                consumed = consume_free_try(request.user, "llm_optimization")
+                if consumed and request.user.free_tries_used >= 20:
+                    messages.warning(request, "You have exhausted your 20 free tries! Please upgrade your plan to continue using premium features.")
+            
+            from core.applications.documents.tasks import process_document_task
+            process_document_task.delay(document.id)
 
         chunks_list = document.chunks.ordered()
         paginator = Paginator(chunks_list, 20)
@@ -195,6 +212,24 @@ class ProcessDocumentHTMXView(DetailView):
             elif getattr(document, "_llm_fallback_used", False):
                 response["HX-Trigger"] = "llmFallbackUsed"
         return response
+
+
+@method_decorator(ratelimit(key="user", rate="15/m", block=True), name="dispatch")
+class ChunkDisplayHTMXView(LoginRequiredMixin, View):
+    """Returns the HTMX partial for a single chunk's optimized display."""
+
+    def get(self, request: HttpRequest, pk: int) -> HttpResponse:
+        chunk = get_object_or_404(
+            DocumentChunk.objects.select_related("document"),
+            pk=pk,
+            document__user=request.user,
+        )
+        has_edit_feature = user_has_feature(request.user, "manual_edit")
+        return render(
+            request,
+            "documents/partials/chunk_optimized_display.html",
+            {"chunk": chunk, "has_edit_feature": has_edit_feature},
+        )
 
 
 @method_decorator(ratelimit(key="user", rate="15/m", block=True), name="dispatch")
@@ -252,33 +287,37 @@ class RecordChunkAudioHTMXView(LoginRequiredMixin, DetailView):
     def get(self, request, *args, **kwargs):
         chunk = self.get_object()
         has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
+        has_tts_feature = user_has_feature(request.user, "tts_generation")
         return render(
             request,
             "documents/partials/chunk_optimized_display.html",
-            {"chunk": chunk, "has_edit_feature": has_edit_feature},
+            {"chunk": chunk, "has_edit_feature": has_edit_feature, "has_tts_feature": has_tts_feature},
         )
 
     def post(self, request, *args, **kwargs):
-        from core.applications.documents.models import ChunkAudioRecording  # noqa: PLC0415
-        from core.applications.documents.tts import get_tts_provider  # noqa: PLC0415
+        from django.http import HttpResponseForbidden
 
         chunk = self.get_object()
         has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
+        has_tts_feature = user_has_feature(request.user, "tts_generation")
+        
+        if not has_tts_feature:
+            messages.error(request, "You have exhausted your 20 free tries! Please upgrade your plan to use the recording feature.")
+            return HttpResponseForbidden("Feature locked")
 
-        provider = get_tts_provider()
-        audio_content = provider.generate_audio(chunk.optimized_text)
-        audio_content.name = (
-            f"document_{chunk.document.pk}_chunk_{chunk.chunk_index}.mp3"
-        )
+        consumed = consume_free_try(request.user, "tts_generation")
+        if consumed and request.user.free_tries_used >= 20:
+            messages.warning(request, "You have exhausted your 20 free tries! Please upgrade your plan to continue using premium features.")
 
-        recording, _created = ChunkAudioRecording.objects.get_or_create(chunk=chunk)
-        recording.audio_file.save(audio_content.name, audio_content, save=True)
-        chunk.refresh_from_db()
+        chunk.is_recording = True
+        chunk.save(update_fields=["is_recording"])
+
+        generate_chunk_audio_task.delay(chunk.id)
 
         return render(
             request,
             "documents/partials/chunk_optimized_display.html",
-            {"chunk": chunk, "has_edit_feature": has_edit_feature},
+            {"chunk": chunk, "has_edit_feature": has_edit_feature, "has_tts_feature": has_tts_feature},
         )
 
 

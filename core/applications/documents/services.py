@@ -17,7 +17,7 @@ class LLMExhaustedError(Exception):
     Caught by PipelineService per-chunk to fall back to ManualOptimizerService
     while preserving the overall pipeline result and signalling the view layer.
     """
-from PyPDF2 import PdfReader
+import pdfplumber
 
 from core.applications.documents.models import Document
 from core.applications.documents.models import OptimizationRegexRule
@@ -46,14 +46,14 @@ class FileExtractionService:
 
     @classmethod
     def _extract_from_pdf(cls, file_obj: BinaryIO) -> str:
-        """Extract text from a PDF file using PyPDF2."""
+        """Extract text from a PDF file using pdfplumber."""
         text = []
         try:
-            reader = PdfReader(file_obj)
-            for page in reader.pages:
-                extracted = page.extract_text()
-                if extracted:
-                    text.append(extracted)
+            with pdfplumber.open(file_obj) as pdf:
+                for page in pdf.pages:
+                    extracted = page.extract_text(x_tolerance=2, y_tolerance=3)
+                    if extracted:
+                        text.append(extracted)
         except Exception:  # noqa: BLE001, S110
             pass
         return "\n\n".join(text)
@@ -197,13 +197,9 @@ class UserOptimizationExampleService:
                 user=user, domain_type=domain_type
             ).exclude(id__in=ids_to_keep).delete()
 
-        # Fire-and-forget thread to generate regex rule via LLM
-        def background_generate() -> None:
-            LLMOptimizerService.generate_regex_rule(
-                raw_text, edited_text, user, domain_type
-            )
-
-        threading.Thread(target=background_generate, daemon=True).start()
+        # Fire-and-forget background task to generate regex rule via LLM
+        from core.applications.documents.tasks import generate_regex_rule_task
+        generate_regex_rule_task.delay(raw_text, edited_text, user.id, domain_type)
 
 
 class LLMOptimizerService:

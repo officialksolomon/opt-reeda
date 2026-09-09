@@ -81,7 +81,7 @@ SubscriptionManager = auto_prefetch.Manager.from_queryset(SubscriptionQuerySet)
 def user_has_feature(user: object, feature_key: str) -> bool:
     """
     Single, canonical check for whether a user has an active subscription
-    that grants a specific feature.
+    that grants a specific feature, OR if they have free tries remaining.
 
     Defined here because feature-gating is a pricing-domain concern — the
     Subscription model lives in this app.  Import this function from any
@@ -94,9 +94,48 @@ def user_has_feature(user: object, feature_key: str) -> bool:
     if not getattr(user, "is_authenticated", False):
         return False
 
-    return (
+    # Check if they have an active subscription granting this feature
+    has_sub = (
         Subscription.objects.active()
         .for_user(user)
         .with_feature(feature_key)
         .exists()
     )
+    
+    if has_sub:
+        return True
+        
+    # Check if they have free tries remaining
+    return getattr(user, "free_tries_used", 0) < 20
+
+
+def consume_free_try(user: object, feature_key: str) -> bool:
+    """
+    Consumes a free try if the user does NOT have an active subscription
+    granting the given feature key.
+    
+    Returns True if a try was consumed (meaning they did not have a sub),
+    Returns False if no try was consumed (they either have a sub or they ran out).
+    """
+    from core.applications.pricing.models import Subscription  # noqa: PLC0415
+
+    if not getattr(user, "is_authenticated", False):
+        return False
+
+    has_sub = (
+        Subscription.objects.active()
+        .for_user(user)
+        .with_feature(feature_key)
+        .exists()
+    )
+    
+    if has_sub:
+        return False
+        
+    free_tries_used = getattr(user, "free_tries_used", 0)
+    if free_tries_used < 20:
+        user.free_tries_used = free_tries_used + 1
+        user.save(update_fields=["free_tries_used"])
+        return True
+        
+    return False

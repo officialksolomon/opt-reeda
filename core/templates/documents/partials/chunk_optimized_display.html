@@ -1,11 +1,22 @@
-<div id="chunk-optimized-{{ chunk.pk }}" class="bg-green-50 p-3 rounded-md border border-green-200 shadow-sm relative group/chunk">
-    <div class="flex justify-between items-center mb-2 border-b border-green-200 pb-1">
-        <h6 class="font-bold text-green-800 flex items-center">
-            <svg class="w-4 h-4 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+<div id="chunk-optimized-{{ chunk.pk }}" class="bg-green-50 p-3 rounded-md border border-green-200 shadow-sm relative group/chunk"
+    {% if chunk.is_recording %}
+    hx-get="{% url 'documents:chunk-display' chunk.pk %}" 
+    hx-trigger="every 2s" 
+    hx-swap="outerHTML"
+    {% endif %}>
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 border-b border-green-200 pb-2 gap-2">
+        <h6 class="font-bold text-green-800 flex items-center whitespace-nowrap">
+            <svg class="w-4 h-4 mr-1 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             After (Optimized)
         </h6>
-        <div class="flex items-center space-x-2 flex-nowrap">
-            {% if chunk.audio_recording and chunk.audio_recording.audio_file %}
+        <div class="flex items-center space-x-2 flex-wrap">
+            {% if chunk.is_recording %}
+            <button type="button" disabled
+                class="whitespace-nowrap text-xs font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded flex items-center shadow-sm border border-gray-200 cursor-not-allowed">
+                <svg class="w-3 h-3 mr-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <span class="text-[10px] uppercase tracking-wider animate-pulse opacity-80">Recording...</span>
+            </button>
+            {% elif chunk.audio_recording and chunk.audio_recording.audio_file %}
             {% if not hide_play_btn %}
             <button type="button" class="chunk-audio-play-btn whitespace-nowrap text-xs font-bold text-blue-700 bg-blue-100 hover:bg-blue-200 px-2 py-1 rounded transition focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center shadow-sm border border-blue-200" data-audio-url="{{ chunk.audio_recording.audio_file.url }}" data-audio-speed="{{ request.user.audio_speed_pref }}">
                 <svg class="w-3 h-3 mr-1 play-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"></path></svg>
@@ -14,15 +25,14 @@
             </button>
             {% endif %}
             <button type="button" 
-                class="group/btn whitespace-nowrap text-xs font-bold text-red-700 bg-red-100 hover:bg-red-200 px-2 py-1 rounded transition focus:outline-none focus:ring-2 focus:ring-red-400 flex items-center shadow-sm border border-red-200"
+                class="group/btn text-xs font-bold text-red-700 bg-red-100 hover:bg-red-200 px-2 py-1 rounded transition focus:outline-none focus:ring-2 focus:ring-red-400 flex items-center shadow-sm border border-red-200"
                 hx-post="{% url 'documents:chunk-record' chunk.pk %}"
                 hx-target="#chunk-optimized-{{ chunk.pk }}"
                 hx-swap="outerHTML"
                 hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
                 title="Regenerate Audio">
                 <svg class="w-3 h-3 group-[.htmx-request]/btn:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                <span class="hidden md:inline group-[.htmx-request]/btn:hidden ml-1">Regenerate Audio</span>
-                <span class="hidden group-[.htmx-request]/btn:inline text-[10px] uppercase tracking-wider animate-pulse opacity-80">Regenerating...</span>
+                <span class="hidden group-[.htmx-request]/btn:inline text-[10px] uppercase tracking-wider animate-pulse opacity-80 px-1">Regenerating...</span>
             </button>
             {% else %}
             <button type="button" 
@@ -50,5 +60,5 @@
             {% endif %}
         </div>
     </div>
-    <p class="text-green-700 font-mono text-xs whitespace-pre-wrap leading-relaxed">{{ chunk.highlighted_optimized_text }}</p>
+    <p class="text-green-700 font-mono text-xs whitespace-pre-wrap leading-relaxed break-words">{{ chunk.highlighted_optimized_text }}</p>
 </div>

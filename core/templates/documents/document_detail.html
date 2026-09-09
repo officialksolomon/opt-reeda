@@ -199,6 +199,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 return;
             }
 
+            // Check if any HTML5 audio element (recorded chunk) is currently playing.
+            // If so, prevent TTS playback from triggering.
+            const isAudioPlaying = Array.from(document.querySelectorAll('audio')).some(
+                audio => !audio.paused && !audio.ended && audio.readyState > 2
+            );
+            if (isAudioPlaying) {
+                return;
+            }
+
             // Make sure chunksToPlay is populated
             chunksToPlay = Array.from(document.querySelectorAll('.chunk-item'));
             const index = chunksToPlay.indexOf(chunkEl);
