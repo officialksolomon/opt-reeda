@@ -95,6 +95,24 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
 
 @document_chunk_viewset_schema
-class DocumentChunkViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = DocumentChunk.objects.with_document()
+class DocumentChunkViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentChunkSerializer
+
+    def get_queryset(self):
+        qs = DocumentChunk.objects.with_document()
+        if self.request.user.is_authenticated:
+            return qs.filter(document__user=self.request.user)
+        return qs.none()
+
+    def perform_create(self, serializer):
+        from rest_framework.exceptions import PermissionDenied
+        document = serializer.validated_data.get('document')
+        if document.user != self.request.user:
+            raise PermissionDenied("You do not have permission to add chunks to this document.")
+        serializer.save(is_user_created=True)
+
+    def perform_destroy(self, instance):
+        from rest_framework.exceptions import PermissionDenied
+        if not instance.is_user_created:
+            raise PermissionDenied("You can only delete chunks that you manually created.")
+        instance.delete()

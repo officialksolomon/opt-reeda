@@ -9,14 +9,17 @@ class DocumentChunkSerializer(serializers.ModelSerializer):
         model = DocumentChunk
         fields = [
             "id",
+            "document",
             "chunk_index",
             "title",
             "raw_text",
             "optimized_text",
             "estimated_duration_seconds",
+            "is_user_created",
             "created_at",
             "updated_at",
         ]
+        read_only_fields = ["is_user_created"]
 
 
 class DocumentSerializer(serializers.ModelSerializer):

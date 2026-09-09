@@ -101,6 +101,7 @@ class DocumentChunk(TimeBasedModel):  # type: ignore[django-manager-missing]
     chunk_index = PositiveIntegerField(default=0)
     title = CharField(_("Title"), max_length=255, blank=True)
     is_recording = models.BooleanField(default=False)
+    is_user_created = models.BooleanField(default=False)
     raw_text = TextField(blank=True)
     optimized_text = TextField(blank=True)
     estimated_duration_seconds = PositiveIntegerField(default=0)

@@ -10,6 +10,7 @@ from django.views.generic import CreateView
 from django.views.generic import DeleteView
 from django.views.generic import DetailView
 from django.views.generic import ListView
+from django.views import View
 from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
 
@@ -354,3 +355,93 @@ def llm_fallback_toast_view(request):
     back to offline mode mid-processing.
     """
     return render(request, "documents/partials/llm_fallback_toast.html")
+
+
+class ManualDocumentCreateView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        title = request.POST.get("title", "Untitled Document").strip() or "Untitled Document"
+        domain_type = request.POST.get("domain_type", Document.DomainType.AUTO_DETECT)
+        
+        document = Document.objects.create(
+            user=request.user,
+            title=title,
+            domain_type=domain_type,
+            optimization_mode=OptimizationMode.MANUAL,
+            status=Document.Status.COMPLETED
+        )
+        return HttpResponseRedirect(reverse_lazy('documents:document-detail', kwargs={'pk': document.pk}))
+
+
+@method_decorator(ratelimit(key="user", rate="30/m", block=True), name="dispatch")
+class ChunkCreateHTMXView(LoginRequiredMixin, View):
+    def post(self, request, document_pk):
+        document = get_object_or_404(Document, pk=document_pk, user=request.user)
+        raw_text = request.POST.get("raw_text", "").strip()
+        if raw_text:
+            last_chunk = document.chunks.order_by("-chunk_index").first()
+            new_index = (last_chunk.chunk_index + 1) if last_chunk else 1
+            
+            # Simple duration estimation (150 WPM)
+            words = raw_text.split()
+            est_seconds = max(5, int((len(words) / 150) * 60))
+            
+            DocumentChunk.objects.create(
+                document=document,
+                chunk_index=new_index,
+                title=f"Section {new_index}",
+                raw_text=raw_text,
+                optimized_text=raw_text, # Will be replaced during processing
+                estimated_duration_seconds=est_seconds,
+                is_user_created=True
+            )
+            
+            # If the document was already COMPLETED, change it back to PENDING so they can process the new chunk
+            if document.status == Document.Status.COMPLETED:
+                document.status = Document.Status.PENDING
+                document.save(update_fields=["status"])
+                
+        # Return the chunks list partial so it updates immediately
+        chunks_list = document.chunks.ordered()
+        paginator = Paginator(chunks_list, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        has_edit_feature = user_has_feature(request.user, "edit_optimized_text")
+        has_llm_feature = user_has_feature(request.user, "llm_optimization")
+        manual_mode_forced = not has_llm_feature
+        
+        return render(
+            request,
+            "documents/partials/chunk_list.html",
+            {
+                "document": document,
+                "chunks": page_obj,
+                "is_paginated": page_obj.has_other_pages(),
+                "page_obj": page_obj,
+                "has_edit_feature": has_edit_feature,
+                "manual_mode_forced": manual_mode_forced,
+            },
+        )
+
+
+@method_decorator(ratelimit(key="user", rate="30/m", block=True), name="dispatch")
+class ChunkDeleteHTMXView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        from django.http import HttpResponseForbidden
+        chunk = get_object_or_404(DocumentChunk, pk=pk, document__user=request.user)
+        
+        if not chunk.is_user_created:
+            return HttpResponseForbidden("Cannot delete system-generated chunks.")
+            
+        deleted_index = chunk.chunk_index
+        document = chunk.document
+        chunk.delete()
+        
+        # Re-index remaining chunks efficiently in a single query
+        from django.db.models import F
+        document.chunks.filter(chunk_index__gt=deleted_index).update(
+            chunk_index=F('chunk_index') - 1
+        )
+                
+        # Return empty response to let HTMX remove the element, or re-render chunk_list.
+        return HttpResponse("")

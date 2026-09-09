@@ -7,9 +7,17 @@
     
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 border-b border-gray-200 pb-4 gap-4 sm:gap-0">
         <h1 class="text-3xl font-bold text-gray-900">Recent Documents</h1>
-        <a href="{% url 'documents:document-table' %}" class="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded shadow-sm text-sm text-center transition focus:outline-none focus:ring-2 focus:ring-gray-300">
-            View All Documents &rarr;
-        </a>
+        <div class="flex gap-2 w-full sm:w-auto flex-col sm:flex-row">
+            <form action="{% url 'documents:document-create-manual' %}" method="post" class="w-full sm:w-auto">
+                {% csrf_token %}
+                <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-2 px-4 rounded shadow-sm text-sm text-center transition focus:outline-none focus:ring-2 focus:ring-brand">
+                    + Empty Document
+                </button>
+            </form>
+            <a href="{% url 'documents:document-table' %}" class="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded shadow-sm text-sm text-center transition focus:outline-none focus:ring-2 focus:ring-gray-300">
+                View All Documents &rarr;
+            </a>
+        </div>
     </div>
 
     <!-- Filter and Sort Bar -->

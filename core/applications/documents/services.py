@@ -530,8 +530,14 @@ class PipelineService:
                             expecting_answer = False
                 base_cleaned = '\n\n'.join(lines)
 
-            # Create Chunks FIRST from base_cleaned text
-            chunks = cls._create_chunks(document, base_cleaned)
+            # Check if there are user-created chunks
+            has_user_chunks = document.chunks.filter(is_user_created=True).exists()
+
+            if not has_user_chunks:
+                # Create Chunks FIRST from base_cleaned text
+                chunks = cls._create_chunks(document, base_cleaned)
+            else:
+                chunks = list(document.chunks.order_by('chunk_index'))
 
             # Optimize each chunk based on optimization mode.
             # For LLM mode, catch LLMExhaustedError per-chunk so one failed
