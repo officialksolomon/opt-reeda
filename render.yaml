@@ -59,11 +59,11 @@ services:
         sync: false
       - key: PAYSTACK_PUBLIC_KEY
         sync: false
-      - key: DJANGO_AWS_ACCESS_KEY_ID
+      - key: CLOUDINARY_CLOUD_NAME
         sync: false
-      - key: DJANGO_AWS_SECRET_ACCESS_KEY
+      - key: CLOUDINARY_API_KEY
         sync: false
-      - key: DJANGO_AWS_STORAGE_BUCKET_NAME
+      - key: CLOUDINARY_API_SECRET
         sync: false
       - key: MAILGUN_API_KEY
         sync: false
@@ -117,11 +117,11 @@ services:
         sync: false
       - key: PAYSTACK_PUBLIC_KEY
         sync: false
-      - key: DJANGO_AWS_ACCESS_KEY_ID
+      - key: CLOUDINARY_CLOUD_NAME
         sync: false
-      - key: DJANGO_AWS_SECRET_ACCESS_KEY
+      - key: CLOUDINARY_API_KEY
         sync: false
-      - key: DJANGO_AWS_STORAGE_BUCKET_NAME
+      - key: CLOUDINARY_API_SECRET
         sync: false
       - key: MAILGUN_API_KEY
         sync: false
