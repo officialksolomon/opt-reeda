@@ -2,7 +2,7 @@ databases:
   - name: optreeda-db
     databaseName: optreeda
     user: optreeda
-    plan: starter
+    plan: free
 
 services:
   - type: redis
@@ -14,7 +14,7 @@ services:
     name: optreeda-web
     env: docker
     dockerfilePath: ./Dockerfile.prod
-    plan: starter
+    plan: free
     dockerCommand: /start
     healthCheckPath: /
     envVars:
@@ -74,7 +74,7 @@ services:
     name: optreeda-celery
     env: docker
     dockerfilePath: ./Dockerfile.prod
-    plan: starter
+    plan: free
     dockerCommand: /start-celeryworker
     envVars:
       - key: DATABASE_URL
