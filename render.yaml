@@ -65,65 +65,15 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
-      - key: MAILGUN_API_KEY
+      - key: EMAIL_HOST
         sync: false
-      - key: MAILGUN_DOMAIN
+      - key: EMAIL_PORT
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: EMAIL_USE_TLS
         sync: false
 
-  - type: worker
-    name: optreeda-celery
-    env: docker
-    dockerfilePath: ./Dockerfile.prod
-    plan: free
-    dockerCommand: /start-celeryworker
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: optreeda-db
-          property: connectionString
-      - key: POSTGRES_HOST
-        fromDatabase:
-          name: optreeda-db
-          property: host
-      - key: POSTGRES_PORT
-        fromDatabase:
-          name: optreeda-db
-          property: port
-      - key: POSTGRES_DB
-        fromDatabase:
-          name: optreeda-db
-          property: database
-      - key: POSTGRES_USER
-        fromDatabase:
-          name: optreeda-db
-          property: user
-      - key: POSTGRES_PASSWORD
-        fromDatabase:
-          name: optreeda-db
-          property: password
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: optreeda-redis
-          property: connectionString
-      - key: DJANGO_SETTINGS_MODULE
-        value: "config.settings.production"
-      - key: DJANGO_SECRET_KEY
-        fromService:
-          type: web
-          name: optreeda-web
-          envVarKey: DJANGO_SECRET_KEY
-      - key: PAYSTACK_SECRET_KEY
-        sync: false
-      - key: PAYSTACK_PUBLIC_KEY
-        sync: false
-      - key: CLOUDINARY_CLOUD_NAME
-        sync: false
-      - key: CLOUDINARY_API_KEY
-        sync: false
-      - key: CLOUDINARY_API_SECRET
-        sync: false
-      - key: MAILGUN_API_KEY
-        sync: false
-      - key: MAILGUN_DOMAIN
-        sync: false
+
