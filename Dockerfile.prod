@@ -1,0 +1,40 @@
+FROM python:3.14-slim as python-base
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    UV_SYSTEM_PYTHON=1 \
+    UV_PROJECT_ENVIRONMENT="/opt/venv" \
+    PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
+
+# Install system dependencies required for psycopg and other C extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install production dependencies directly into system python environment
+RUN uv sync --no-dev --frozen
+
+# Copy scripts and make them executable
+COPY ./compose/production/django/entrypoint /entrypoint
+RUN sed -i 's/\r$//g' /entrypoint && chmod +x /entrypoint
+
+COPY ./compose/production/django/start /start
+RUN sed -i 's/\r$//g' /start && chmod +x /start
+
+COPY ./compose/production/celery/worker/start /start-celeryworker
+RUN sed -i 's/\r$//g' /start-celeryworker && chmod +x /start-celeryworker
+
+# Copy application code
+COPY . .
+
+ENTRYPOINT ["/entrypoint"]

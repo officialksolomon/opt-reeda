@@ -1,0 +1,55 @@
+
+volumes:
+  production_postgres_data: {}
+  production_postgres_data_backups: {}
+  production_redis_data: {}
+
+services:
+  django:
+    container_name: prod_django
+    build:
+      context: .
+      dockerfile: ./Dockerfile.prod
+    image: optreeda_production_django
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - ./.envs/.production/.django
+      - ./.envs/.production/.postgres
+    command: /start
+    ports:
+      - "5000:5000"
+    restart: always
+
+  postgres:
+    container_name: prod_postgres
+    image: postgres:15-alpine
+    volumes:
+      - production_postgres_data:/var/lib/postgresql/data
+      - production_postgres_data_backups:/backups
+    env_file:
+      - ./.envs/.production/.postgres
+    restart: always
+
+  redis:
+    container_name: prod_redis
+    image: redis:8.0.1
+    volumes:
+      - production_redis_data:/data
+    restart: always
+
+  celeryworker:
+    container_name: prod_celeryworker
+    build:
+      context: .
+      dockerfile: ./Dockerfile.prod
+    image: optreeda_production_celeryworker
+    depends_on:
+      - redis
+      - postgres
+    env_file:
+      - ./.envs/.production/.django
+      - ./.envs/.production/.postgres
+    command: /start-celeryworker
+    restart: always

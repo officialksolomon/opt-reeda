@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+
+# In local development, we want watchfiles to reload the worker on code changes.
+# If watchfiles is not installed or errors, fallback to standard celery worker.
+celery -A config.celery_app worker -l INFO

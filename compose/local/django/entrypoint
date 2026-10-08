@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+postgres_ready() {
+python << END
+import sys
+import psycopg
+from django.conf import settings
+
+try:
+    psycopg.connect(
+        dbname="${POSTGRES_DB:-postgres}",
+        user="${POSTGRES_USER:-postgres}",
+        password="${POSTGRES_PASSWORD:-}",
+        host="${POSTGRES_HOST:-postgres}",
+        port="${POSTGRES_PORT:-5432}",
+    )
+except psycopg.OperationalError:
+    sys.exit(-1)
+sys.exit(0)
+END
+}
+
+if [ -n "${POSTGRES_HOST:-}" ]; then
+  until postgres_ready; do
+    >&2 echo 'Waiting for PostgreSQL to become available...'
+    sleep 1
+  done
+  >&2 echo 'PostgreSQL is available'
+fi
+
+exec "$@"

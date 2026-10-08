@@ -40,6 +40,7 @@ dependencies = [
   "dj-rest-auth>=7.2.0",
   "gtts>=2.2.4",
   "django-ratelimit>=4.1.0",
+  "celery>=5.4.0",
 ]
 
 [dependency-groups]
