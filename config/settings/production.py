@@ -115,12 +115,22 @@ ADMIN_URL = env("DJANGO_ADMIN_URL")
 
 # SMTP Email Backend
 # ------------------------------------------------------------------------------
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = env("DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+else:
+    # Fallback to console backend to prevent 500 errors during signup if SMTP is unconfigured
+    EMAIL_BACKEND = env("DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+
+ACCOUNT_EMAIL_VERIFICATION = env(
+    "DJANGO_ACCOUNT_EMAIL_VERIFICATION",
+    default="mandatory" if (EMAIL_HOST_USER and EMAIL_HOST_PASSWORD) else "optional",
+)
 
 
 
