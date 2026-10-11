@@ -365,7 +365,7 @@ if USE_TZ:
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-broker_url
 CELERY_BROKER_URL = REDIS_URL or "memory://"
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_backend
-CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND_URL", default=REDIS_URL or "cache")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND_URL", default=REDIS_URL if REDIS_URL else None)
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-extended
 CELERY_RESULT_EXTENDED = True
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-backend-always-retry
