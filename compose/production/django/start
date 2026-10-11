@@ -7,7 +7,4 @@ set -o nounset
 python manage.py collectstatic --noinput
 python manage.py migrate --noinput
 
-# Start Celery worker in background using lightweight solo pool (~100MB RAM)
-celery -A config.celery_app worker -l INFO --pool=solo --without-gossip --without-mingle &
-
 exec gunicorn config.wsgi --bind 0.0.0.0:${PORT:-5000} --chdir=/app --workers 1 --threads 2
