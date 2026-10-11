@@ -95,16 +95,17 @@ CLOUDINARY_STORAGE = {
 # EMAIL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email
+DEFAULT_EMAIL_USERNAME = "support@jsbc.com.ng"
 DEFAULT_FROM_EMAIL = env(
     "DJANGO_DEFAULT_FROM_EMAIL",
-    default="My Awesome Project <noreply@example.com>",
+    default="Optreeada Support <support@jsbc.com.ng>",
 )
 # https://docs.djangoproject.com/en/dev/ref/settings/#server-email
 SERVER_EMAIL = env("DJANGO_SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-subject-prefix
 EMAIL_SUBJECT_PREFIX = env(
     "DJANGO_EMAIL_SUBJECT_PREFIX",
-    default="[My Awesome Project] ",
+    default="[OptReeda Support] ",
 )
 ACCOUNT_EMAIL_SUBJECT_PREFIX = EMAIL_SUBJECT_PREFIX
 
@@ -115,23 +116,18 @@ ADMIN_URL = env("DJANGO_ADMIN_URL")
 
 # SMTP Email Backend
 # ------------------------------------------------------------------------------
-EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
-EMAIL_PORT = env.int("EMAIL_PORT", default=587)
-EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
-EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=(EMAIL_PORT == 465))
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=(EMAIL_PORT == 587 and not EMAIL_USE_SSL))
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_PORT = env.int("EMAIL_PORT", default=465)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EL_PASSWORD", default=env("EMAIL_HOST_PASSWORD", default=""))
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=True)
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=False)
 EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
-
-if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
-    EMAIL_BACKEND = env("DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
-else:
-    # Fallback to console backend to prevent 500 errors during signup if SMTP is unconfigured
-    EMAIL_BACKEND = env("DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 
 ACCOUNT_EMAIL_VERIFICATION = env(
     "DJANGO_ACCOUNT_EMAIL_VERIFICATION",
-    default="mandatory" if (EMAIL_HOST_USER and EMAIL_HOST_PASSWORD) else "optional",
+    default="mandatory",
 )
 
 
@@ -185,5 +181,5 @@ LOGGING = {
 # ------------------------------------------------------------------------------
 
 # Celery background tasks
-CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=True)
-CELERY_TASK_EAGER_PROPAGATES = env.bool("CELERY_TASK_EAGER_PROPAGATES", default=True)
+CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+CELERY_TASK_EAGER_PROPAGATES = env.bool("CELERY_TASK_EAGER_PROPAGATES", default=False)

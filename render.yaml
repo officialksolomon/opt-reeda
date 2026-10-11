@@ -73,6 +73,8 @@ services:
         sync: false
       - key: EMAIL_HOST_PASSWORD
         sync: false
+      - key: EL_PASSWORD
+        sync: false
       - key: EMAIL_USE_TLS
         sync: false
       - key: EMAIL_USE_SSL
