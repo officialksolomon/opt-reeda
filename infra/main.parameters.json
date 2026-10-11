@@ -5,9 +5,6 @@
     "environmentName": {
       "value": "optreeda-prod"
     },
-    "deployCeleryWorker": {
-      "value": false
-    },
     "cloudinaryCloudName": {
       "value": ""
     },
