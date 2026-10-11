@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing
 
 from allauth.account.adapter import DefaultAccountAdapter
@@ -11,6 +12,8 @@ from django.http import HttpRequest
 
 from core.applications.users.models import User
 
+logger = logging.getLogger(__name__)
+
 
 class AccountAdapter(DefaultAccountAdapter):
     def is_open_for_signup(self, request: HttpRequest) -> bool:
@@ -18,6 +21,12 @@ class AccountAdapter(DefaultAccountAdapter):
 
     def get_email_confirmation_url(self, request: HttpRequest, emailconfirmation: typing.Any) -> str:
         return super().get_email_confirmation_url(request, emailconfirmation)
+
+    def send_mail(self, template_prefix: str, email: str, context: dict[str, typing.Any]) -> None:
+        try:
+            super().send_mail(template_prefix, email, context)
+        except Exception as exc:
+            logger.error("Failed to send account email '%s' to %s: %s", template_prefix, email, exc)
 
 
 class SocialAccountAdapter(DefaultSocialAccountAdapter):

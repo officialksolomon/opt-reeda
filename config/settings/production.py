@@ -127,7 +127,7 @@ EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
 
 ACCOUNT_EMAIL_VERIFICATION = env(
     "DJANGO_ACCOUNT_EMAIL_VERIFICATION",
-    default="mandatory",
+    default="none",
 )
 
 

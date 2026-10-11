@@ -55,6 +55,8 @@ services:
         value: ".onrender.com"
       - key: DJANGO_ADMIN_URL
         value: "admin/"
+      - key: DJANGO_ACCOUNT_EMAIL_VERIFICATION
+        value: "none"
       - key: PAYSTACK_SECRET_KEY
         sync: false
       - key: PAYSTACK_PUBLIC_KEY
