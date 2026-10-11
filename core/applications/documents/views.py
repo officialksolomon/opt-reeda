@@ -117,14 +117,17 @@ class DocumentCreateView(CreateView):
         else:
             form.instance.optimization_mode = OptimizationMode.MANUAL
 
+        uploaded_file = form.cleaned_data.get("file")
+        if uploaded_file and hasattr(uploaded_file, "name"):
+            import os
+            ext = os.path.splitext(uploaded_file.name)[1].lower().lstrip(".")
+            if ext:
+                form.instance.file_type = ext
+
         response = super().form_valid(form)
-        # Only run the pipeline immediately for authenticated users.
-        import time
-        print(f"[{time.time()}] About to call delay")
         if self.request.user.is_authenticated:
             from core.applications.documents.tasks import process_document_task
             process_document_task.delay(self.object.id)
-        print(f"[{time.time()}] Delay called, returning response")
         return response
 
 

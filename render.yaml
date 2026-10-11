@@ -5,11 +5,6 @@ databases:
     plan: free
 
 services:
-  - type: redis
-    name: optreeda-redis
-    plan: free
-    ipAllowList: []
-
   - type: web
     name: optreeda-web
     env: docker
@@ -42,11 +37,6 @@ services:
         fromDatabase:
           name: optreeda-db
           property: password
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: optreeda-redis
-          property: connectionString
       - key: DJANGO_SETTINGS_MODULE
         value: "config.settings.production"
       - key: DJANGO_SECRET_KEY

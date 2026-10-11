@@ -22,8 +22,11 @@ import pdfplumber
 from core.applications.documents.models import Document
 from core.applications.documents.models import OptimizationRegexRule
 from core.applications.documents.models import UserOptimizationExample
+import logging
 from core.helpers.enums import PREDEFINED_PROMPTS
 from core.helpers.enums import OptimizationMode
+
+logger = logging.getLogger(__name__)
 
 
 class FileExtractionService:
@@ -31,18 +34,35 @@ class FileExtractionService:
 
     @classmethod
     def extract_text(cls, document: Document) -> str:
-        """Extract text from a Document based on its file extension."""
+        """Extract text from a Document based on magic bytes and file extension."""
         if not document.file:
             return ""
 
         ext = os.path.splitext(document.file.name)[1].lower()
+        if not ext and hasattr(document, "file_type") and document.file_type:
+            ext = f".{str(document.file_type).lower().strip('.')}"
 
-        with document.file.open("rb") as file:
-            if ext == ".pdf":
-                return cls._extract_from_pdf(file)
-            if ext in [".doc", ".docx"]:
-                return cls._extract_from_docx(file)
-            return cls._extract_from_txt(file)
+        try:
+            with document.file.open("rb") as file:
+                content = file.read()
+        except Exception as e:
+            logger.exception("Failed to read document file from storage: %s", e)
+            raise
+
+        if not content:
+            return ""
+
+        # Inspect header bytes to identify format independently of file extension
+        # (Cloudinary and object storages often strip or modify extensions in storage names)
+        stream = io.BytesIO(content)
+
+        if content.startswith(b"%PDF") or ext == ".pdf":
+            return cls._extract_from_pdf(stream)
+        if content.startswith(b"PK\x03\x04") or ext in [".doc", ".docx"]:
+            return cls._extract_from_docx(stream)
+        if content.startswith(b"\xd0\xcf\x11\xe0"):
+            return cls._extract_from_docx(stream)
+        return cls._extract_from_txt(stream)
 
     @classmethod
     def _extract_from_pdf(cls, file_obj: BinaryIO) -> str:
@@ -54,8 +74,8 @@ class FileExtractionService:
                     extracted = page.extract_text(x_tolerance=2, y_tolerance=3)
                     if extracted:
                         text.append(extracted)
-        except Exception:  # noqa: BLE001, S110
-            pass
+        except Exception as e:
+            logger.exception("pdfplumber failed to extract text from PDF: %s", e)
         return "\n\n".join(text)
 
     @classmethod
@@ -67,17 +87,23 @@ class FileExtractionService:
             for para in doc.paragraphs:
                 if para.text:
                     text.append(para.text)  # noqa: PERF401
-        except Exception:  # noqa: BLE001, S110
-            pass
+        except Exception as e:
+            logger.exception("python-docx failed to extract text from document: %s", e)
         return "\n\n".join(text)
 
     @classmethod
     def _extract_from_txt(cls, file_obj: BinaryIO) -> str:
         """Extract text from a standard TXT file."""
         try:
-            return file_obj.read().decode("utf-8")
-        except Exception:  # noqa: BLE001, S110
-            pass
+            raw_bytes = file_obj.read()
+            if isinstance(raw_bytes, bytes):
+                try:
+                    return raw_bytes.decode("utf-8")
+                except UnicodeDecodeError:
+                    return raw_bytes.decode("latin-1", errors="replace")
+            return str(raw_bytes)
+        except Exception as e:
+            logger.exception("Failed to decode text file: %s", e)
         return ""
 
 
@@ -475,7 +501,12 @@ class PipelineService:
         try:
             # File Extraction if raw_text is empty
             if not document.raw_text and document.file:
-                document.raw_text = FileExtractionService.extract_text(document)
+                extracted = FileExtractionService.extract_text(document)
+                if not extracted or not extracted.strip():
+                    raise ValueError(
+                        "Unable to extract readable text from the uploaded file. If this is a scanned document or image-only PDF, please ensure it contains selectable text."
+                    )
+                document.raw_text = extracted
                 document.save(update_fields=["raw_text"])
 
             # Base Cleaning
