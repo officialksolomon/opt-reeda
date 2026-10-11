@@ -75,5 +75,7 @@ services:
         sync: false
       - key: EMAIL_USE_TLS
         sync: false
+      - key: EMAIL_USE_SSL
+        sync: false
 
 
