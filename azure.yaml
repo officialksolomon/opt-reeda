@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+name: opt-reeda
+metadata:
+  template: opt-reeda@1.0.0
+
+infra:
+  provider: bicep
+  path: ./infra
+
+services:
+  web:
+    project: .
+    language: python
+    host: containerapp
+    docker:
+      path: ./Dockerfile.prod
+      context: .
+      remoteBuild: true

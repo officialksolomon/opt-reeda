@@ -23,6 +23,7 @@ Below you will find the table of contents detailing the core features, applicati
    users_prd
    pricing_prd
    howto
+   azure_deployment
    users
 
 
