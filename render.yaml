@@ -5,6 +5,12 @@ databases:
     plan: free
 
 services:
+  # Inactive: Uncomment to provision a Redis instance on Render when ready
+  # - type: redis
+  #   name: optreeda-redis
+  #   plan: free
+  #   ipAllowList: []
+
   - type: web
     name: optreeda-web
     env: docker
@@ -37,6 +43,14 @@ services:
         fromDatabase:
           name: optreeda-db
           property: password
+      # Inactive: Uncomment if optreeda-redis service above is enabled
+      # - key: REDIS_URL
+      #   fromService:
+      #     type: redis
+      #     name: optreeda-redis
+      #     property: connectionString
+      - key: CELERY_TASK_ALWAYS_EAGER
+        value: "true"
       - key: DJANGO_SETTINGS_MODULE
         value: "config.settings.production"
       - key: DJANGO_SECRET_KEY

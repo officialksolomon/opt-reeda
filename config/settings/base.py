@@ -382,6 +382,7 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_TIME_LIMIT = 5 * 60
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-soft-time-limit
 CELERY_TASK_SOFT_TIME_LIMIT = 5 * 60
-# We explicitly set eager to False to ensure tasks are sent to Redis and run asynchronously
-CELERY_TASK_ALWAYS_EAGER = False
+# Tasks default to synchronous (eager) execution when running without a dedicated Redis/worker
+CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=True)
+CELERY_TASK_EAGER_PROPAGATES = env.bool("CELERY_TASK_EAGER_PROPAGATES", default=True)
 
