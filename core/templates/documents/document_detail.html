@@ -96,12 +96,17 @@
     }
     
     .chunk-item.active-speaking {
-        background-color: #e5322d; /* brand */
-        border-left: 4px solid #b91c1c; /* darker red */
+        background-color: #e5322d !important; /* brand */
+        border-left: 4px solid #b91c1c !important; /* darker red */
     }
     
-    .chunk-item.active-speaking > p.read-text {
-        color: #ffffff;
+    .chunk-item.active-speaking p.read-text,
+    .chunk-item.active-speaking .read-text {
+        color: #ffffff !important;
+    }
+
+    .chunk-item.active-speaking button svg {
+        stroke: #ffffff !important;
     }
     
     .chunk-item .compare-dropdown {
